@@ -62,6 +62,16 @@ app.use((err, req, res, next) => {
 io.use(socketAuth);
 chatSocket(io);
 
+httpServer.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${port} is already in use. Stop the existing server or change PORT in .env.`);
+        process.exit(1);
+    }
+
+    console.error('HTTP server error:', error);
+    process.exit(1);
+});
+
 const start = async () => {
     try {
         await connectDB();

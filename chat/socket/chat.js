@@ -167,8 +167,8 @@ export default function chatSocket(io) {
                     return;
                 }
 
-                // Tell everyone in the saved message room to remove message
-                io.to(deleted.room).emit('messageDeleted', { messageId });
+                // Tell everyone in room to remove message
+                io.to(room).emit('messageDeleted', { messageId });
 
             } catch (error) {
                 console.error('deleteMessage error:', error);

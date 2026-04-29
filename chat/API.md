@@ -25,7 +25,7 @@ npm install
 2. Create the PostgreSQL tables:
 
 ```bash
-psql -U YOUR_DB_USER -d YOUR_DB_NAME -f schema.sql
+npm run db:setup
 ```
 
 3. Configure `.env`:
