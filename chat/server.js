@@ -12,7 +12,8 @@ import chatSocket from './socket/chat.js';
 
 import authRoutes from './routes/authRoutes.js';
 import mentorRoutes from './routes/mentorRoutes.js';
-
+import emojiRoutes from './routes/emojiRoute.js';
+import uploadRoutes from './routes/uploadRoute.js';
 // ─── App setup ─────────────────────────────────────────────────
 const app = express();
 const httpServer = createServer(app);
@@ -33,6 +34,8 @@ app.use(express.urlencoded({ extended: true }));
 // ─── Routes ────────────────────────────────────────────────────
 app.use('/auth', authRoutes);
 app.use('/mentor', mentorRoutes);
+app.use('/emoji', emojiRoutes);
+app.use('/upload', uploadRoutes);
 
 // ─── Health check ──────────────────────────────────────────────
 app.get('/', (req, res) => {

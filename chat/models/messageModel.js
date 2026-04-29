@@ -1,12 +1,30 @@
 import pool from '../config/db.js';
 
 // Save a new message
-export const saveMessage = async ({ senderId, room, roomType, message }) => {
+export const saveMessage = async ({
+    senderId,
+    room,
+    roomType,
+    message,
+    fileUrl = null,
+    fileName = null,
+    fileSize = null,
+    fileType = null
+}) => {
     const result = await pool.query(
-        `INSERT INTO messages (sender_id, room, room_type, message)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO messages (
+            sender_id,
+            room,
+            room_type,
+            message,
+            file_url,
+            file_name,
+            file_size,
+            file_type
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
-        [senderId, room, roomType, message]
+        [senderId, room, roomType, message, fileUrl, fileName, fileSize, fileType]
     );
     return result.rows[0];
 };
@@ -17,9 +35,15 @@ export const getMessagesByRoom = async (room) => {
         `SELECT 
             m.id,
             m.message,
+            m.file_url,
+            m.file_name,
+            m.file_size,
+            m.file_type,
             m.room,
             m.room_type,
             m.is_read,
+            m.is_edited,
+            m.edited_at,
             m.created_at,
             u.id as sender_id,
             u.name as sender_name,
@@ -39,9 +63,15 @@ export const getRecentMessages = async (room, limit = 50) => {
         `SELECT 
             m.id,
             m.message,
+            m.file_url,
+            m.file_name,
+            m.file_size,
+            m.file_type,
             m.room,
             m.room_type,
             m.is_read,
+            m.is_edited,
+            m.edited_at,
             m.created_at,
             u.id as sender_id,
             u.name as sender_name,
@@ -112,6 +142,9 @@ export const getLastMessage = async (room) => {
     const result = await pool.query(
         `SELECT 
             m.message,
+            m.file_url,
+            m.file_name,
+            m.file_type,
             m.created_at,
             u.name as sender_name
          FROM messages m
@@ -120,6 +153,19 @@ export const getLastMessage = async (room) => {
          ORDER BY m.created_at DESC
          LIMIT 1`,
         [room]
+    );
+    return result.rows[0];
+};
+// Add this to your existing messageModel.js
+export const updateMessage = async (messageId, senderId, newMessage) => {
+    const result = await pool.query(
+        `UPDATE messages
+         SET message = $1,
+             is_edited = true,
+             edited_at = NOW()
+         WHERE id = $2 AND sender_id = $3
+         RETURNING *`,
+        [newMessage, messageId, senderId]
     );
     return result.rows[0];
 };

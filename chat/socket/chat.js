@@ -3,7 +3,8 @@ import {
     getRecentMessages,
     markMessagesAsRead,
     getUnreadCount,
-    deleteMessage
+    deleteMessage,
+    updateMessage
 } from '../models/messageModel.js';
 
 import {
@@ -14,14 +15,19 @@ import {
     isApprovedPair
 } from '../models/mentorModel.js';
 
-// ─── Room name helpers ─────────────────────────────────────────
-export const getRoomName = (type, id1, id2) => {
-    if (type === 'general') return 'general';
-    if (type === 'girls') return 'girls';
-    if (type === 'mentor') return `mentor_${id1}_${id2}`;
-    if (type === 'dm') {
-        const sorted = [id1, id2].sort();
-        return `dm_${sorted[0]}_${sorted[1]}`;
+import {
+    addReaction,
+    removeReaction,
+    getGroupedReactions
+} from '../models/reactionModel.js';
+
+// ─── Room name helper ──────────────────────────────────────────
+const getRoom = (roomType, userId, otherUserId) => {
+    if (roomType === 'general') return 'general';
+    if (roomType === 'girls') return 'girls';
+    if (roomType === 'mentor' || roomType === 'dm') {
+        const sorted = [userId, otherUserId].sort();
+        return `${roomType}_${sorted[0]}_${sorted[1]}`;
     }
 };
 
@@ -30,24 +36,14 @@ const canAccessRoom = async (socket, roomType, otherUserId) => {
     const userId = socket.user.id;
     const role = socket.user.role;
 
-    // General - everyone can access
     if (roomType === 'general') return true;
-
-    // Girls only - only girls can access
     if (roomType === 'girls') return role === 'girl';
-
-    // Mentor chat - only approved pairs
-    if (roomType === 'mentor') {
-        if (role === 'girl') {
-            return await isApprovedPair(userId, otherUserId);
-        }
-        if (role === 'mentor') {
-            return await isApprovedPair(otherUserId, userId);
-        }
-    }
-
-    // DM - any two users
     if (roomType === 'dm') return true;
+
+    if (roomType === 'mentor') {
+        if (role === 'girl') return await isApprovedPair(userId, otherUserId);
+        if (role === 'mentor') return await isApprovedPair(otherUserId, userId);
+    }
 
     return false;
 };
@@ -58,10 +54,8 @@ export default function chatSocket(io) {
     io.on('connection', async (socket) => {
         console.log(`✅ connected: ${socket.user.name} (${socket.user.role})`);
 
-        // Update user online status
+        // Update online status
         await updateOnlineStatus(socket.user.id, true);
-
-        // Tell everyone this user is online
         io.emit('userOnline', {
             userId: socket.user.id,
             name: socket.user.name
@@ -70,34 +64,23 @@ export default function chatSocket(io) {
         // ─── Join Room ─────────────────────────────────────────
         socket.on('joinRoom', async ({ roomType, otherUserId }) => {
             try {
-                // Check access
                 const allowed = await canAccessRoom(socket, roomType, otherUserId);
                 if (!allowed) {
-                    socket.emit('error', {
-                        message: 'You are not allowed in this room'
-                    });
+                    socket.emit('error', { message: 'You are not allowed in this room' });
                     return;
                 }
 
-                // Get room name
-                const room = getRoomName(
-                    roomType,
-                    socket.user.role === 'mentor' ? socket.user.id : otherUserId,
-                    socket.user.role === 'girl' ? socket.user.id : otherUserId
-                );
-
-                // Join the room
+                const room = getRoom(roomType, socket.user.id, otherUserId);
                 socket.join(room);
-                console.log(`${socket.user.name} joined room: ${room}`);
 
                 // Load last 50 messages
                 const history = await getRecentMessages(room);
                 socket.emit('chatHistory', history);
 
-                // Mark messages as read
+                // Mark as read
                 await markMessagesAsRead(room, socket.user.id);
 
-                // Get unread count
+                // Unread count
                 const unread = await getUnreadCount(room, socket.user.id);
                 socket.emit('unreadCount', { room, count: unread });
 
@@ -108,46 +91,57 @@ export default function chatSocket(io) {
         });
 
         // ─── Send Message ──────────────────────────────────────
-        socket.on('sendMessage', async ({ roomType, otherUserId, message }) => {
+        socket.on('sendMessage', async ({
+            roomType,
+            otherUserId,
+            message,
+            fileUrl,
+            fileName,
+            fileSize,
+            fileType
+        }) => {
             try {
-                if (!message || message.trim() === '') {
-                    socket.emit('error', { message: 'Message cannot be empty' });
+                // Must have message or file
+                if (!message?.trim() && !fileUrl) {
+                    socket.emit('error', { message: 'Message or file is required' });
                     return;
                 }
 
-                // Check access
                 const allowed = await canAccessRoom(socket, roomType, otherUserId);
                 if (!allowed) {
-                    socket.emit('error', {
-                        message: 'You are not allowed in this room'
-                    });
+                    socket.emit('error', { message: 'You are not allowed in this room' });
                     return;
                 }
 
-                // Get room name
-                const room = getRoomName(
-                    roomType,
-                    socket.user.role === 'mentor' ? socket.user.id : otherUserId,
-                    socket.user.role === 'girl' ? socket.user.id : otherUserId
-                );
+                const room = getRoom(roomType, socket.user.id, otherUserId);
 
                 // Save to DB
                 const saved = await saveMessage({
                     senderId: socket.user.id,
                     room,
                     roomType,
-                    message: message.trim()
+                    message: message?.trim() || '',
+                    fileUrl: fileUrl || null,
+                    fileName: fileName || null,
+                    fileSize: fileSize || null,
+                    fileType: fileType || null
                 });
 
-                // Send to everyone in room
+                // Broadcast to room
                 io.to(room).emit('receiveMessage', {
                     id: saved.id,
                     sender_id: socket.user.id,
                     sender_name: socket.user.name,
                     sender_role: socket.user.role,
                     message: saved.message,
+                    file_url: saved.file_url,
+                    file_name: saved.file_name,
+                    file_size: saved.file_size,
+                    file_type: saved.file_type,
                     room,
                     room_type: roomType,
+                    is_edited: false,
+                    reactions: [],
                     created_at: saved.created_at
                 });
 
@@ -157,22 +151,126 @@ export default function chatSocket(io) {
             }
         });
 
+        // ─── Edit Message ──────────────────────────────────────
+        socket.on('editMessage', async ({ messageId, room, newMessage }) => {
+            try {
+                if (!newMessage?.trim()) {
+                    socket.emit('error', { message: 'Message cannot be empty' });
+                    return;
+                }
+
+                // Only sender can edit
+                const updated = await updateMessage(
+                    messageId,
+                    socket.user.id,
+                    newMessage.trim()
+                );
+
+                if (!updated) {
+                    socket.emit('error', { message: 'Message not found or not yours' });
+                    return;
+                }
+
+                // Tell everyone in room
+                io.to(room).emit('messageEdited', {
+                    messageId,
+                    newMessage: updated.message,
+                    editedAt: updated.edited_at
+                });
+
+            } catch (error) {
+                console.error('editMessage error:', error);
+                socket.emit('error', { message: 'Failed to edit message' });
+            }
+        });
+
         // ─── Delete Message ────────────────────────────────────
-        socket.on('deleteMessage', async ({ messageId, room }) => {
+        socket.on('deleteMessage', async ({ messageId }) => {
             try {
                 const deleted = await deleteMessage(messageId, socket.user.id);
 
                 if (!deleted) {
-                    socket.emit('error', { message: 'Message not found' });
+                    socket.emit('error', { message: 'Message not found or not yours' });
                     return;
                 }
 
-                // Tell everyone in room to remove message
-                io.to(room).emit('messageDeleted', { messageId });
+                io.to(deleted.room).emit('messageDeleted', { messageId });
 
             } catch (error) {
                 console.error('deleteMessage error:', error);
                 socket.emit('error', { message: 'Failed to delete message' });
+            }
+        });
+
+        // ─── Add Reaction ──────────────────────────────────────
+        socket.on('addReaction', async ({
+            messageId,
+            room,
+            emojiType,
+            standardEmoji,
+            customEmojiId
+        }) => {
+            try {
+                // Validate
+                if (emojiType === 'standard' && !standardEmoji) {
+                    socket.emit('error', { message: 'Standard emoji is required' });
+                    return;
+                }
+                if (emojiType === 'custom' && !customEmojiId) {
+                    socket.emit('error', { message: 'Custom emoji ID is required' });
+                    return;
+                }
+
+                // Save reaction
+                await addReaction({
+                    messageId,
+                    userId: socket.user.id,
+                    emojiType,
+                    standardEmoji,
+                    customEmojiId
+                });
+
+                // Get updated grouped reactions
+                const reactions = await getGroupedReactions(messageId);
+
+                // Tell everyone in room
+                io.to(room).emit('reactionUpdated', {
+                    messageId,
+                    reactions
+                });
+
+            } catch (error) {
+                console.error('addReaction error:', error);
+                socket.emit('error', { message: 'Failed to add reaction' });
+            }
+        });
+
+        // ─── Remove Reaction ───────────────────────────────────
+        socket.on('removeReaction', async ({
+            messageId,
+            room,
+            standardEmoji,
+            customEmojiId
+        }) => {
+            try {
+                await removeReaction({
+                    messageId,
+                    userId: socket.user.id,
+                    standardEmoji,
+                    customEmojiId
+                });
+
+                // Get updated reactions
+                const reactions = await getGroupedReactions(messageId);
+
+                io.to(room).emit('reactionRemoved', {
+                    messageId,
+                    reactions
+                });
+
+            } catch (error) {
+                console.error('removeReaction error:', error);
+                socket.emit('error', { message: 'Failed to remove reaction' });
             }
         });
 
@@ -200,11 +298,7 @@ export default function chatSocket(io) {
         // ─── Disconnect ────────────────────────────────────────
         socket.on('disconnect', async () => {
             console.log(`❌ disconnected: ${socket.user.name}`);
-
-            // Update offline status
             await updateOnlineStatus(socket.user.id, false);
-
-            // Tell everyone this user is offline
             io.emit('userOffline', {
                 userId: socket.user.id,
                 name: socket.user.name
