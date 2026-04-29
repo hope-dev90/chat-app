@@ -1,6 +1,6 @@
 import { createContext, useEffect, useState, useContext } from 'react';
 import { io } from 'socket.io-client';
-import { AuthContext } from './AuthContext';
+import { AuthContext } from './authContext';
 
 export const SocketContext = createContext();
 
@@ -13,7 +13,7 @@ export const SocketProvider = ({ children }) => {
         if (!token) return;
 
         // Connect to socket with JWT
-        const newSocket = io('http://localhost:3000', {
+        const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000', {
             auth: { token }
         });
 
@@ -26,7 +26,7 @@ export const SocketProvider = ({ children }) => {
         });
 
         // Track online users
-        newSocket.on('userOnline', ({ userId, name }) => {
+        newSocket.on('userOnline', ({ userId }) => {
             setOnlineUsers(prev => [...new Set([...prev, userId])]);
         });
 

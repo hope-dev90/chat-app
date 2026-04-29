@@ -16,10 +16,24 @@ const pool = new Pool({
 export const connectDB = async () => {
     try {
         const client = await pool.connect();
-        console.log('PostgreSQL connected ✅');
+        console.log('PostgreSQL connected');
         client.release();
     } catch (error) {
-        console.error('PostgreSQL connection error:', error);
+        const refused = error.code === 'ECONNREFUSED' || error.errors?.some((err) => err.code === 'ECONNREFUSED');
+
+        if (refused) {
+            console.error(
+                [
+                    'PostgreSQL connection failed.',
+                    `No database is accepting connections at ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}.`,
+                    'Start PostgreSQL, then run: npm run db:setup',
+                    'After that, start the server again with: node server.js'
+                ].join('\n')
+            );
+        } else {
+            console.error('PostgreSQL connection error:', error.message);
+        }
+
         process.exit(1);
     }
 };

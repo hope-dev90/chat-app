@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useContext } from 'react';
-import { AuthContext, AuthProvider } from './context/AuthContext';
-import { SocketProvider } from './context/SocketContext';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import { AuthContext, AuthProvider } from './context/authContext';
+import { SocketProvider } from './context/socketContext';
+import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
 import GirlDashboard from './pages/GirlDashboard';
 import MentorDashboard from './pages/MentorDashboard';
 import VerifyEmail from './pages/VerifyEmail';
