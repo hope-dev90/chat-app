@@ -5,6 +5,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import path from 'path';
 
 import { connectDB } from './config/db.js';
 import { socketAuth } from './middleware/socketAuth.js';
@@ -31,6 +32,7 @@ const host = process.env.HOST || '0.0.0.0';
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ─── Routes ────────────────────────────────────────────────────
 app.use('/auth', authRoutes);
@@ -57,6 +59,23 @@ app.use('*', (req, res) => {
 // ─── Error handler ─────────────────────────────────────────────
 app.use((err, req, res, next) => {
     console.error(err.stack);
+
+    if (err.name === 'MulterError' || err.message?.startsWith('Only ')) {
+        return res.status(400).json({
+            success: false,
+            message: err.code === 'LIMIT_FILE_SIZE'
+                ? 'The selected file is too large'
+                : err.message
+        });
+    }
+
+    if (req.originalUrl?.startsWith('/upload') || req.originalUrl?.startsWith('/emoji')) {
+        return res.status(500).json({
+            success: false,
+            message: err.message || 'Upload failed'
+        });
+    }
+
     res.status(500).json({
         success: false,
         message: 'Something went wrong'

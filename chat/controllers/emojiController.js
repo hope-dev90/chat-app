@@ -4,7 +4,7 @@ import {
     getEmojiByName,
     deleteEmoji
 } from '../models/emojiModel.js';
-import cloudinary from '../config/cloudinary.js';
+import cloudinary, { getLocalUploadUrl } from '../config/cloudinary.js';
 
 // ─── Create custom emoji ───────────────────────────────────────
 export const createCustomEmoji = async (req, res) => {
@@ -39,9 +39,12 @@ export const createCustomEmoji = async (req, res) => {
         }
 
         // Save to DB (image already uploaded to cloudinary by multer)
+        const imageUrl = req.file.path?.startsWith('http')
+            ? req.file.path
+            : getLocalUploadUrl(req, 'emojis');
         const emoji = await createEmoji({
             name: cleanName,
-            imageUrl: req.file.path,
+            imageUrl,
             createdBy: userId
         });
 

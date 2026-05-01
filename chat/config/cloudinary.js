@@ -2,17 +2,58 @@ import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import multer from 'multer';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
 dotenv.config();
 
-// ─── Configure Cloudinary ──────────────────────────────────────
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// ─── Emoji Storage ─────────────────────────────────────────────
+const useCloudinary = process.env.CLOUDINARY_ENABLED === 'true';
+const uploadRoot = path.join(process.cwd(), 'uploads');
+
+const ensureDir = (dir) => {
+    fs.mkdirSync(dir, { recursive: true });
+};
+
+const localStorage = (folder) => {
+    const destination = path.join(uploadRoot, folder);
+    ensureDir(destination);
+
+    return multer.diskStorage({
+        destination,
+        filename: (req, file, cb) => {
+            const extension = path.extname(file.originalname).toLowerCase();
+            const baseName = path.basename(file.originalname, extension)
+                .toLowerCase()
+                .replace(/[^a-z0-9_-]+/g, '-')
+                .replace(/^-+|-+$/g, '') || 'upload';
+
+            cb(null, `${Date.now()}-${baseName}${extension}`);
+        }
+    });
+};
+
+const fileFilter = (allowedExtensions) => (req, file, cb) => {
+    const extension = path.extname(file.originalname).slice(1).toLowerCase();
+
+    if (!allowedExtensions.includes(extension)) {
+        cb(new Error(`Only ${allowedExtensions.join(', ')} files are allowed`));
+        return;
+    }
+
+    cb(null, true);
+};
+
+export const getLocalUploadUrl = (req, folder) => {
+    if (!req.file?.filename) return null;
+    return `${req.protocol}://${req.get('host')}/uploads/${folder}/${req.file.filename}`;
+};
+
 const emojiStorage = new CloudinaryStorage({
     cloudinary,
     params: {
@@ -22,16 +63,14 @@ const emojiStorage = new CloudinaryStorage({
     }
 });
 
-// ─── Image Storage ─────────────────────────────────────────────
 const imageStorage = new CloudinaryStorage({
     cloudinary,
     params: {
         folder: 'chat_app/images',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp']
     }
 });
 
-// ─── File Storage ──────────────────────────────────────────────
 const fileStorage = new CloudinaryStorage({
     cloudinary,
     params: {
@@ -41,20 +80,22 @@ const fileStorage = new CloudinaryStorage({
     }
 });
 
-// ─── Multer instances ──────────────────────────────────────────
 export const uploadEmoji = multer({
-    storage: emojiStorage,
-    limits: { fileSize: 2 * 1024 * 1024 } // 2MB max
+    storage: useCloudinary ? emojiStorage : localStorage('emojis'),
+    fileFilter: fileFilter(['jpg', 'jpeg', 'png', 'gif', 'webp']),
+    limits: { fileSize: 2 * 1024 * 1024 }
 });
 
 export const uploadImage = multer({
-    storage: imageStorage,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
+    storage: useCloudinary ? imageStorage : localStorage('images'),
+    fileFilter: fileFilter(['jpg', 'jpeg', 'png', 'gif', 'webp']),
+    limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 export const uploadFile = multer({
-    storage: fileStorage,
-    limits: { fileSize: 20 * 1024 * 1024 } // 20MB max
+    storage: useCloudinary ? fileStorage : localStorage('files'),
+    fileFilter: fileFilter(['pdf', 'zip', 'doc', 'docx', 'txt', 'xlsx']),
+    limits: { fileSize: 20 * 1024 * 1024 }
 });
 
 export default cloudinary;

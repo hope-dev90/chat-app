@@ -5,6 +5,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
     const [message, setMessage] = useState('');
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState('');
+    const [uploadError, setUploadError] = useState('');
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showCustomEmojis, setShowCustomEmojis] = useState(false);
     const [customEmojis, setCustomEmojis] = useState([]);
@@ -13,6 +14,10 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
     const [newEmojiFile, setNewEmojiFile] = useState(null);
     const [creatingEmoji, setCreatingEmoji] = useState(false);
     const [emojiError, setEmojiError] = useState('');
+    
+    // New state for image preview
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [selectedImagePreview, setSelectedImagePreview] = useState(null);
 
     const imageInputRef = useRef(null);
     const fileInputRef = useRef(null);
@@ -37,10 +42,49 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
     };
 
     // ── Handle message send ────────────────────────────────────
-    const handleSend = () => {
-        if (!message.trim()) return;
-        onSend({ message: message.trim() });
-        setMessage('');
+    const handleSend = async () => {
+        // If we have a selected image, upload it first
+        if (selectedImage) {
+            setUploading(true);
+            setUploadProgress('Uploading image...');
+            setUploadError('');
+
+            try {
+                const formData = new FormData();
+                formData.append('image', selectedImage);
+
+                const res = await api.post('/upload/image', formData);
+
+                const { url, name, size, type } = res.data.file;
+
+                // Send message with file and text
+                onSend({
+                    message: message.trim(),
+                    fileUrl: url,
+                    fileName: name,
+                    fileSize: size,
+                    fileType: type
+                });
+
+                // Reset everything
+                setSelectedImage(null);
+                setSelectedImagePreview(null);
+                setMessage('');
+
+            } catch (err) {
+                console.error('Image upload failed:', err);
+                setUploadError(err.response?.data?.message || 'Image upload failed');
+                return;
+            } finally {
+                setUploading(false);
+                setUploadProgress('');
+            }
+        } else if (message.trim()) {
+            // Just send text
+            onSend({ message: message.trim() });
+            setMessage('');
+        }
+        
         textareaRef.current?.focus();
     };
 
@@ -60,57 +104,36 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
         textareaRef.current?.focus();
     };
 
-    // ── Upload image ───────────────────────────────────────────
-    const handleImageUpload = async (e) => {
+    // ── Select image for preview ────────────────────────────────
+    const handleImageSelect = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        setUploading(true);
-        setUploadProgress('Uploading image...');
-
-        try {
-            const formData = new FormData();
-            formData.append('image', file);
-
-            const res = await api.post('/upload/image', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-
-            const { url, name, size, type } = res.data.file;
-
-            // Send message with file
-            onSend({
-                message: '',
-                fileUrl: url,
-                fileName: name,
-                fileSize: size,
-                fileType: type
-            });
-
-        } catch (err) {
-            console.error('Image upload failed:', err);
-        } finally {
-            setUploading(false);
-            setUploadProgress('');
-            e.target.value = '';
-        }
+        setSelectedImage(file);
+        setSelectedImagePreview(URL.createObjectURL(file));
+        e.target.value = '';
     };
 
-    // ── Upload file ────────────────────────────────────────────
+    // ── Remove selected image ───────────────────────────────────
+    const removeSelectedImage = () => {
+        setSelectedImage(null);
+        setSelectedImagePreview(null);
+    };
+
+    // ── Upload file (still immediate for non-images) ───────────
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         setUploading(true);
         setUploadProgress('Uploading file...');
+        setUploadError('');
 
         try {
             const formData = new FormData();
             formData.append('file', file);
 
-            const res = await api.post('/upload/file', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const res = await api.post('/upload/file', formData);
 
             const { url, name, size, type } = res.data.file;
 
@@ -124,6 +147,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
 
         } catch (err) {
             console.error('File upload failed:', err);
+            setUploadError(err.response?.data?.message || 'File upload failed');
         } finally {
             setUploading(false);
             setUploadProgress('');
@@ -140,15 +164,14 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
 
         setCreatingEmoji(true);
         setEmojiError('');
+        setUploadError('');
 
         try {
             const formData = new FormData();
             formData.append('name', newEmojiName);
             formData.append('image', newEmojiFile);
 
-            await api.post('/emoji/create', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            await api.post('/emoji/create', formData);
 
             // Reset and reload
             setNewEmojiName('');
@@ -171,6 +194,38 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                 <div className="mb-2 flex items-center gap-2 text-[#6429ef] text-sm">
                     <div className="w-4 h-4 border-2 border-[#6429ef] border-t-transparent rounded-full animate-spin"></div>
                     {uploadProgress}
+                </div>
+            )}
+
+            {uploadError && (
+                <p className="mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                    {uploadError}
+                </p>
+            )}
+
+            {/* ── Image Preview ───────────────────────────── */}
+            {selectedImagePreview && (
+                <div className="mb-3 bg-slate-50 rounded-xl p-3 border border-slate-200">
+                    <div className="flex gap-3">
+                        <div className="relative">
+                            <img
+                                src={selectedImagePreview}
+                                alt="Preview"
+                                className="w-24 h-24 rounded-xl object-cover"
+                            />
+                            <button
+                                onClick={removeSelectedImage}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 transition shadow"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-xs text-slate-500 mb-1">Image selected</p>
+                            <p className="text-sm text-slate-700 truncate">{selectedImage.name}</p>
+                            <p className="text-xs text-slate-400 mt-1">Add a message below and click Send</p>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -303,105 +358,123 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
             )}
 
             {/* ── Input row ──────────────────────────────── */}
-            <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm">
+            <div className={`mx-auto flex max-w-3xl flex-col gap-2 ${selectedImagePreview ? 'rounded-xl' : 'rounded-full'} border border-slate-200 bg-white px-3 py-2 shadow-sm`}>
+                
+                {selectedImagePreview && (
+                    <div className="flex gap-2 items-start">
+                        <img
+                            src={selectedImagePreview}
+                            alt="Preview"
+                            className="w-16 h-16 rounded-lg object-cover"
+                        />
+                        <button
+                            onClick={removeSelectedImage}
+                            className="text-slate-400 hover:text-red-500 text-sm p-1"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
 
-                {/* ── Action buttons ─────────────────────── */}
-                <div className="flex flex-shrink-0 gap-1">
+                <div className="flex items-end gap-2">
+                    {/* ── Action buttons ─────────────────────── */}
+                    <div className="flex flex-shrink-0 gap-1">
 
-                    {/* Standard emoji */}
+                        {/* Standard emoji */}
+                        <button
+                            onClick={() => {
+                                setShowEmojiPicker(!showEmojiPicker);
+                                setShowCustomEmojis(false);
+                            }}
+                            title="Emoji"
+                            className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
+                        >
+                            😊
+                        </button>
+
+                        {/* Custom emoji */}
+                        <button
+                            onClick={() => {
+                                setShowCustomEmojis(!showCustomEmojis);
+                                setShowEmojiPicker(false);
+                                loadCustomEmojis();
+                            }}
+                            title="Custom Emoji"
+                            className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
+                        >
+                            🎨
+                        </button>
+
+                        {/* Upload image */}
+                        <button
+                            onClick={() => imageInputRef.current?.click()}
+                            title="Upload Image"
+                            disabled={uploading || selectedImage !== null}
+                            className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl disabled:opacity-50"
+                        >
+                            🖼️
+                        </button>
+
+                        {/* Upload file */}
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            title="Upload File"
+                            disabled={uploading}
+                            className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl disabled:opacity-50"
+                        >
+                            📎
+                        </button>
+
+                        {/* Create custom emoji */}
+                        <button
+                            onClick={() => {
+                                setShowCreateEmoji(!showCreateEmoji);
+                                setShowCustomEmojis(false);
+                                setShowEmojiPicker(false);
+                            }}
+                            title="Create Custom Emoji"
+                            className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
+                        >
+                            ✨
+                        </button>
+
+                    </div>
+
+                    {/* ── Text input ─────────────────────────── */}
+                    <div className="flex-1 relative">
+                        <textarea
+                            ref={textareaRef}
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder={selectedImage ? "Add a message..." : "Type a message..."}
+                            rows={1}
+                            className="w-full bg-transparent text-slate-800 text-sm px-2 py-2 border-0 focus:outline-none focus:ring-0 resize-none placeholder-slate-400 max-h-32 overflow-y-auto"
+                            style={{ minHeight: '38px' }}
+                            onInput={(e) => {
+                                e.target.style.height = 'auto';
+                                e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
+                            }}
+                        />
+                    </div>
+
+                    {/* ── Send button ────────────────────────── */}
                     <button
-                        onClick={() => {
-                            setShowEmojiPicker(!showEmojiPicker);
-                            setShowCustomEmojis(false);
-                        }}
-                        title="Emoji"
-                        className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
+                        onClick={handleSend}
+                        disabled={(!message.trim() && !selectedImage) || uploading}
+                        className="bg-transparent hover:bg-slate-50 disabled:text-slate-300 text-[#6429ef] p-2 rounded-full transition flex-shrink-0"
                     >
-                        😊
-                    </button>
-
-                    {/* Custom emoji */}
-                    <button
-                        onClick={() => {
-                            setShowCustomEmojis(!showCustomEmojis);
-                            setShowEmojiPicker(false);
-                            loadCustomEmojis();
-                        }}
-                        title="Custom Emoji"
-                        className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
-                    >
-                        🎨
-                    </button>
-
-                    {/* Upload image */}
-                    <button
-                        onClick={() => imageInputRef.current?.click()}
-                        title="Upload Image"
-                        disabled={uploading}
-                        className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl disabled:opacity-50"
-                    >
-                        🖼️
-                    </button>
-
-                    {/* Upload file */}
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        title="Upload File"
-                        disabled={uploading}
-                        className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl disabled:opacity-50"
-                    >
-                        📎
-                    </button>
-
-                    {/* Create custom emoji */}
-                    <button
-                        onClick={() => {
-                            setShowCreateEmoji(!showCreateEmoji);
-                            setShowCustomEmojis(false);
-                            setShowEmojiPicker(false);
-                        }}
-                        title="Create Custom Emoji"
-                        className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
-                    >
-                        ✨
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            className="w-5 h-5"
+                        >
+                            <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                        </svg>
                     </button>
 
                 </div>
-
-                {/* ── Text input ─────────────────────────── */}
-                <div className="flex-1 relative">
-                    <textarea
-                        ref={textareaRef}
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Type a message..."
-                        rows={1}
-                        className="w-full bg-transparent text-slate-800 text-sm px-2 py-2 border-0 focus:outline-none focus:ring-0 resize-none placeholder-slate-400 max-h-32 overflow-y-auto"
-                        style={{ minHeight: '38px' }}
-                        onInput={(e) => {
-                            e.target.style.height = 'auto';
-                            e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
-                        }}
-                    />
-                </div>
-
-                {/* ── Send button ────────────────────────── */}
-                <button
-                    onClick={handleSend}
-                    disabled={!message.trim() || uploading}
-                    className="bg-transparent hover:bg-slate-50 disabled:text-slate-300 text-[#6429ef] p-2 rounded-full transition flex-shrink-0"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className="w-5 h-5"
-                    >
-                        <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-                    </svg>
-                </button>
-
             </div>
 
             {/* Hidden file inputs */}
@@ -410,7 +483,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={handleImageUpload}
+                onChange={handleImageSelect}
             />
             <input
                 ref={fileInputRef}
@@ -419,11 +492,6 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                 className="hidden"
                 onChange={handleFileUpload}
             />
-
-            {/* Hint */}
-            <p className="text-slate-400 text-xs mt-2 text-center hidden">
-                Enter to send · Shift+Enter for new line
-            </p>
 
         </div>
     );
