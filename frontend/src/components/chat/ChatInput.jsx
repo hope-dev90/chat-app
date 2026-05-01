@@ -1,10 +1,7 @@
-import { useState, useRef, useContext } from 'react';
-import { AuthContext } from '../../context/AuthContext';
+import { useState, useRef } from 'react';
 import api from '../../api/axios';
 
 export default function ChatInput({ onSend, onTyping, roomType }) {
-    const { user } = useContext(AuthContext);
-
     const [message, setMessage] = useState('');
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState('');
@@ -167,25 +164,25 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
     };
 
     return (
-        <div className="bg-black border-t border-gray-800 p-4">
+        <div className="bg-white px-4 pb-4 pt-2">
 
             {/* ── Upload progress ────────────────────────── */}
             {uploading && (
-                <div className="mb-2 flex items-center gap-2 text-blue-400 text-sm">
-                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                <div className="mb-2 flex items-center gap-2 text-[#6429ef] text-sm">
+                    <div className="w-4 h-4 border-2 border-[#6429ef] border-t-transparent rounded-full animate-spin"></div>
                     {uploadProgress}
                 </div>
             )}
 
             {/* ── Create custom emoji panel ──────────────── */}
             {showCreateEmoji && (
-                <div className="mb-3 bg-gray-900 rounded-xl p-4 border border-gray-700">
-                    <h4 className="text-white text-sm font-semibold mb-3">
+                <div className="mb-3 bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                    <h4 className="text-slate-800 text-sm font-semibold mb-3">
                         🎨 Create Custom Emoji
                     </h4>
 
                     {emojiError && (
-                        <p className="text-red-400 text-xs mb-2">{emojiError}</p>
+                        <p className="text-red-500 text-xs mb-2">{emojiError}</p>
                     )}
 
                     <div className="flex gap-2 mb-3">
@@ -194,11 +191,11 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                             placeholder="Emoji name (e.g. party_blob)"
                             value={newEmojiName}
                             onChange={(e) => setNewEmojiName(e.target.value)}
-                            className="flex-1 bg-gray-800 text-white text-sm px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="flex-1 bg-white text-slate-800 text-sm px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#8f72ff]/30 focus:border-[#8f72ff]"
                         />
                         <button
                             onClick={() => emojiFileRef.current?.click()}
-                            className="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm px-3 py-2 rounded-lg border border-gray-700 transition"
+                            className="bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm px-3 py-2 rounded-lg border border-slate-200 transition"
                         >
                             {newEmojiFile ? '✅ Image' : '📷 Pick Image'}
                         </button>
@@ -212,7 +209,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                                 alt="preview"
                                 className="w-10 h-10 rounded object-cover"
                             />
-                            <p className="text-gray-400 text-xs">:{newEmojiName}:</p>
+                            <p className="text-slate-500 text-xs">:{newEmojiName}:</p>
                         </div>
                     )}
 
@@ -220,7 +217,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                         <button
                             onClick={handleCreateEmoji}
                             disabled={creatingEmoji}
-                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm px-4 py-2 rounded-lg transition"
+                            className="bg-[#6429ef] hover:bg-[#5220c7] disabled:bg-[#b6a7ef] text-white text-sm px-4 py-2 rounded-lg transition"
                         >
                             {creatingEmoji ? 'Creating...' : 'Create Emoji'}
                         </button>
@@ -231,7 +228,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                                 setNewEmojiName('');
                                 setNewEmojiFile(null);
                             }}
-                            className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-4 py-2 rounded-lg transition"
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm px-4 py-2 rounded-lg transition"
                         >
                             Cancel
                         </button>
@@ -250,21 +247,21 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
 
             {/* ── Custom emoji picker ────────────────────── */}
             {showCustomEmojis && (
-                <div className="mb-3 bg-gray-900 rounded-xl p-3 border border-gray-700">
+                <div className="mb-3 bg-white rounded-xl p-3 border border-slate-200 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <p className="text-gray-400 text-xs font-medium">Custom Emojis</p>
+                        <p className="text-slate-500 text-xs font-medium">Custom Emojis</p>
                         <button
                             onClick={() => {
                                 setShowCustomEmojis(false);
                                 setShowCreateEmoji(true);
                             }}
-                            className="text-blue-400 text-xs hover:text-blue-300 transition"
+                            className="text-[#6429ef] text-xs hover:text-[#5220c7] transition"
                         >
                             + Create New
                         </button>
                     </div>
                     {customEmojis.length === 0 ? (
-                        <p className="text-gray-600 text-xs text-center py-2">
+                        <p className="text-slate-400 text-xs text-center py-2">
                             No custom emojis yet. Create one!
                         </p>
                     ) : (
@@ -290,13 +287,13 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
 
             {/* ── Standard emoji picker ──────────────────── */}
             {showEmojiPicker && (
-                <div className="mb-3 bg-gray-900 rounded-xl p-3 border border-gray-700">
+                <div className="mb-3 bg-white rounded-xl p-3 border border-slate-200 shadow-sm">
                     <div className="grid grid-cols-8 gap-1">
                         {STANDARD_EMOJIS.map(emoji => (
                             <button
                                 key={emoji}
                                 onClick={() => insertEmoji(emoji)}
-                                className="text-xl hover:scale-125 transition-transform p-1 rounded hover:bg-gray-800"
+                                className="text-xl hover:scale-125 transition-transform p-1 rounded hover:bg-slate-100"
                             >
                                 {emoji}
                             </button>
@@ -306,10 +303,10 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
             )}
 
             {/* ── Input row ──────────────────────────────── */}
-            <div className="flex items-end gap-2">
+            <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm">
 
                 {/* ── Action buttons ─────────────────────── */}
-                <div className="flex gap-1">
+                <div className="flex flex-shrink-0 gap-1">
 
                     {/* Standard emoji */}
                     <button
@@ -318,7 +315,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                             setShowCustomEmojis(false);
                         }}
                         title="Emoji"
-                        className="text-gray-400 hover:text-yellow-400 p-2 rounded-lg hover:bg-gray-900 transition text-xl"
+                        className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
                     >
                         😊
                     </button>
@@ -331,7 +328,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                             loadCustomEmojis();
                         }}
                         title="Custom Emoji"
-                        className="text-gray-400 hover:text-purple-400 p-2 rounded-lg hover:bg-gray-900 transition text-xl"
+                        className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
                     >
                         🎨
                     </button>
@@ -341,7 +338,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                         onClick={() => imageInputRef.current?.click()}
                         title="Upload Image"
                         disabled={uploading}
-                        className="text-gray-400 hover:text-blue-400 p-2 rounded-lg hover:bg-gray-900 transition text-xl disabled:opacity-50"
+                        className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl disabled:opacity-50"
                     >
                         🖼️
                     </button>
@@ -351,7 +348,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                         onClick={() => fileInputRef.current?.click()}
                         title="Upload File"
                         disabled={uploading}
-                        className="text-gray-400 hover:text-green-400 p-2 rounded-lg hover:bg-gray-900 transition text-xl disabled:opacity-50"
+                        className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl disabled:opacity-50"
                     >
                         📎
                     </button>
@@ -364,7 +361,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                             setShowEmojiPicker(false);
                         }}
                         title="Create Custom Emoji"
-                        className="text-gray-400 hover:text-pink-400 p-2 rounded-lg hover:bg-gray-900 transition text-xl"
+                        className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
                     >
                         ✨
                     </button>
@@ -380,8 +377,8 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                         onKeyDown={handleKeyDown}
                         placeholder="Type a message..."
                         rows={1}
-                        className="w-full bg-gray-900 text-white text-sm px-4 py-3 rounded-xl border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder-gray-600 max-h-32 overflow-y-auto"
-                        style={{ minHeight: '44px' }}
+                        className="w-full bg-transparent text-slate-800 text-sm px-2 py-2 border-0 focus:outline-none focus:ring-0 resize-none placeholder-slate-400 max-h-32 overflow-y-auto"
+                        style={{ minHeight: '38px' }}
                         onInput={(e) => {
                             e.target.style.height = 'auto';
                             e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
@@ -393,7 +390,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                 <button
                     onClick={handleSend}
                     disabled={!message.trim() || uploading}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white p-3 rounded-xl transition flex-shrink-0"
+                    className="bg-transparent hover:bg-slate-50 disabled:text-slate-300 text-[#6429ef] p-2 rounded-full transition flex-shrink-0"
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -424,7 +421,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
             />
 
             {/* Hint */}
-            <p className="text-gray-700 text-xs mt-2 text-center">
+            <p className="text-slate-400 text-xs mt-2 text-center hidden">
                 Enter to send · Shift+Enter for new line
             </p>
 

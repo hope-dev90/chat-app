@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useContext } from 'react';
-import { AuthContext } from '../../context/AuthContext';
+import { AuthContext } from '../../context/authContext';
 import api from '../../api/axios';
 
 // Standard emojis
@@ -120,21 +120,21 @@ export default function ChatMessage({
     };
 
     return (
-        <div className={`flex gap-2 group px-2 py-1 hover:bg-gray-900 rounded-lg transition ${
+        <div className={`flex w-full gap-2 group px-2 py-0.5 rounded-lg transition ${
             isOwn ? 'flex-row-reverse' : 'flex-row'
         }`}>
 
             {/* ── Avatar ─────────────────────────────────── */}
             <div className="flex-shrink-0 w-8">
-                {showAvatar && (
-                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                {!isOwn && showAvatar && (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#f5a4cf] to-[#8f72ff] flex items-center justify-center text-white text-xs font-bold">
                         {message.sender_name?.[0]?.toUpperCase()}
                     </div>
                 )}
             </div>
 
             {/* ── Message content ────────────────────────── */}
-            <div className={`flex flex-col max-w-xs lg:max-w-md xl:max-w-lg ${
+            <div className={`flex flex-col max-w-[72%] sm:max-w-sm lg:max-w-md xl:max-w-lg ${
                 isOwn ? 'items-end' : 'items-start'
             }`}>
 
@@ -143,10 +143,10 @@ export default function ChatMessage({
                     <div className={`flex items-center gap-2 mb-1 ${
                         isOwn ? 'flex-row-reverse' : 'flex-row'
                     }`}>
-                        <span className="text-xs font-medium text-blue-400">
+                        <span className="text-xs font-medium text-slate-600">
                             {isOwn ? 'You' : message.sender_name}
                         </span>
-                        <span className="text-xs text-gray-600">
+                        <span className="text-xs text-slate-400">
                             {formatTime(message.created_at)}
                         </span>
                     </div>
@@ -157,10 +157,10 @@ export default function ChatMessage({
 
                     {/* Message bubble */}
                     {!editing ? (
-                        <div className={`relative rounded-2xl px-4 py-2 ${
+                        <div className={`relative rounded-[22px] px-4 py-2.5 ${
                             isOwn
-                                ? 'bg-blue-600 text-white rounded-tr-none'
-                                : 'bg-gray-800 text-gray-100 rounded-tl-none'
+                                ? 'bg-[#6429ef] text-white'
+                                : 'bg-[#efefef] text-[#111827]'
                         }`}>
 
                             {/* Text message */}
@@ -187,7 +187,7 @@ export default function ChatMessage({
                                     target="_blank"
                                     rel="noreferrer"
                                     className={`flex items-center gap-2 mt-2 p-2 rounded-lg ${
-                                        isOwn ? 'bg-blue-700' : 'bg-gray-700'
+                                        isOwn ? 'bg-white/15' : 'bg-white'
                                     }`}
                                 >
                                     <span className="text-2xl">
@@ -222,7 +222,7 @@ export default function ChatMessage({
                             {/* Three dot menu - shows on hover */}
                             <button
                                 onClick={() => setShowMenu(!showMenu)}
-                                className={`absolute -top-2 opacity-0 group-hover:opacity-100 transition bg-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-xs ${
+                                className={`absolute -top-2 opacity-0 group-hover:opacity-100 transition bg-white border border-slate-200 text-slate-500 shadow-sm rounded-full w-6 h-6 flex items-center justify-center text-xs ${
                                     isOwn ? '-left-3' : '-right-3'
                                 }`}
                             >
@@ -231,7 +231,7 @@ export default function ChatMessage({
 
                             {/* Context menu */}
                             {showMenu && (
-                                <div className={`absolute top-0 z-50 bg-gray-800 border border-gray-700 rounded-xl shadow-xl overflow-hidden min-w-40 ${
+                                <div className={`absolute top-0 z-50 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden min-w-40 ${
                                     isOwn ? 'right-full mr-2' : 'left-full ml-2'
                                 }`}>
 
@@ -241,7 +241,7 @@ export default function ChatMessage({
                                             setShowEmojiPicker(!showEmojiPicker);
                                             setShowCustomEmojis(false);
                                         }}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 transition"
+                                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition"
                                     >
                                         😊 React
                                     </button>
@@ -253,7 +253,7 @@ export default function ChatMessage({
                                             setShowEmojiPicker(false);
                                             loadCustomEmojis();
                                         }}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 transition"
+                                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition"
                                     >
                                         🎨 Custom React
                                     </button>
@@ -265,7 +265,7 @@ export default function ChatMessage({
                                                 setEditing(true);
                                                 setShowMenu(false);
                                             }}
-                                            className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 transition"
+                                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition"
                                         >
                                             ✏️ Edit
                                         </button>
@@ -278,7 +278,7 @@ export default function ChatMessage({
                                                 onDelete(message.id);
                                                 setShowMenu(false);
                                             }}
-                                            className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 transition"
+                                            className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-slate-50 transition"
                                         >
                                             🗑️ Delete
                                         </button>
@@ -289,7 +289,7 @@ export default function ChatMessage({
 
                             {/* Standard emoji picker */}
                             {showEmojiPicker && (
-                                <div className={`absolute top-8 z-50 bg-gray-800 border border-gray-700 rounded-xl p-2 shadow-xl ${
+                                <div className={`absolute top-8 z-50 bg-white border border-slate-200 rounded-xl p-2 shadow-xl ${
                                     isOwn ? 'right-full mr-2' : 'left-full ml-2'
                                 }`}>
                                     <div className="flex gap-1">
@@ -308,11 +308,11 @@ export default function ChatMessage({
 
                             {/* Custom emoji picker */}
                             {showCustomEmojis && (
-                                <div className={`absolute top-8 z-50 bg-gray-800 border border-gray-700 rounded-xl p-3 shadow-xl w-48 ${
+                                <div className={`absolute top-8 z-50 bg-white border border-slate-200 rounded-xl p-3 shadow-xl w-48 ${
                                     isOwn ? 'right-full mr-2' : 'left-full ml-2'
                                 }`}>
                                     {customEmojis.length === 0 ? (
-                                        <p className="text-gray-500 text-xs text-center">
+                                        <p className="text-slate-400 text-xs text-center">
                                             No custom emojis yet
                                         </p>
                                     ) : (
@@ -345,7 +345,7 @@ export default function ChatMessage({
                             <textarea
                                 value={editText}
                                 onChange={(e) => setEditText(e.target.value)}
-                                className="bg-gray-800 text-white text-sm rounded-lg px-3 py-2 border border-blue-500 focus:outline-none resize-none min-w-48"
+                                className="bg-white text-slate-800 text-sm rounded-xl px-3 py-2 border border-[#8f72ff] focus:outline-none resize-none min-w-48 shadow-sm"
                                 rows={2}
                                 autoFocus
                                 onKeyDown={(e) => {
@@ -359,13 +359,13 @@ export default function ChatMessage({
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleEditSubmit}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-lg transition"
+                                    className="bg-[#6429ef] hover:bg-[#5220c7] text-white text-xs px-3 py-1 rounded-lg transition"
                                 >
                                     Save
                                 </button>
                                 <button
                                     onClick={handleEditCancel}
-                                    className="bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1 rounded-lg transition"
+                                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1 rounded-lg transition"
                                 >
                                     Cancel
                                 </button>
@@ -393,7 +393,7 @@ export default function ChatMessage({
                                         }
                                     }}
                                     title={reaction.users?.join(', ')}
-                                    className="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-full px-2 py-0.5 transition"
+                                    className="flex items-center gap-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 transition shadow-sm"
                                 >
                                     {reaction.emoji_type === 'standard' ? (
                                         <span className="text-sm">{reaction.standard_emoji}</span>
@@ -404,7 +404,7 @@ export default function ChatMessage({
                                             className="w-4 h-4 rounded object-cover"
                                         />
                                     )}
-                                    <span className="text-xs text-gray-400">{reaction.count}</span>
+                                    <span className="text-xs text-slate-500">{reaction.count}</span>
                                 </button>
                             ))}
                         </div>
