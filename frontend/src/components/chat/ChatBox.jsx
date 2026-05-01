@@ -182,11 +182,11 @@ export default function ChatBox({
     };
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden bg-white">
+        <div className="flex-1 flex flex-col overflow-hidden bg-white h-full">
 
-            {/* Back button (for DM and mentor chat) */}
+            {/* Back button (for DM and mentor chat) - FIXED */}
             {onBack && (
-                <div className="px-5 py-3 border-b border-slate-100 bg-white">
+                <div className="flex-shrink-0 px-5 py-3 border-b border-slate-100 bg-white">
                     <button
                         onClick={onBack}
                         className="text-slate-500 hover:text-[#6429ef] text-sm font-medium flex items-center gap-2 transition"
@@ -196,8 +196,8 @@ export default function ChatBox({
                 </div>
             )}
 
-            {/* ── Messages area ──────────────────────────── */}
-            <div className="flex-1 overflow-y-auto bg-white px-3 py-6">
+            {/* ── Messages area - ONLY SCROLLABLE PART ───── */}
+            <div className="flex-1 overflow-y-auto bg-white px-3 py-6 scroll-smooth">
                 <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col space-y-2">
                     <div className="flex flex-col items-center px-4 pb-8 pt-2 text-center">
                         <img
@@ -264,8 +264,8 @@ export default function ChatBox({
                 </div>
             </div>
 
-            {/* ── Chat Input ─────────────────────────────── */}
-            <div className="flex-shrink-0 bg-white">
+            {/* ── Chat Input - FIXED ────────────────────── */}
+            <div className="flex-shrink-0 bg-white border-t border-slate-100">
                 <ChatInput
                     onSend={handleSend}
                     onTyping={handleTyping}

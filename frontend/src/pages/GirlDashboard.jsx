@@ -31,12 +31,12 @@ export default function GirlDashboard() {
     ];
 
     return (
-        <div className="h-screen bg-gray-950 flex overflow-hidden">
+        <div className="h-screen w-screen bg-gray-950 flex overflow-hidden fixed inset-0">
 
-            {/* ── Sidebar ─────────────────────────────────── */}
+            {/* ── Sidebar - FIXED/STATIC ───────────────── */}
             <div className={`
                 fixed inset-y-0 left-0 z-50 w-64 bg-black transform transition-transform duration-300
-                lg:relative lg:translate-x-0
+                lg:relative lg:translate-x-0 flex-shrink-0
                 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             `}>
                 <Sidebar
@@ -53,7 +53,7 @@ export default function GirlDashboard() {
                 />
             </div>
 
-            {/* Sidebar overlay for mobile */}
+            {/* Sidebar overlay for mobile - FIXED */}
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -62,10 +62,10 @@ export default function GirlDashboard() {
             )}
 
             {/* ── Main Content ────────────────────────────── */}
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-                {/* Top navbar */}
-                <div className="bg-black border-b border-gray-800 px-4 py-3 flex items-center justify-between">
+                {/* Top navbar - FIXED/STATIC */}
+                <div className="flex-shrink-0 bg-black border-b border-gray-800 px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
 
                         {/* Mobile menu button */}

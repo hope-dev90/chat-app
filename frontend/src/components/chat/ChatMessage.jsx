@@ -136,7 +136,7 @@ export default function ChatMessage({
 
       {/* ── Message content ────────────────────────── */}
       <div
-        className={`flex flex-col max-w-[72%] sm:max-w-sm lg:max-w-md xl:max-w-lg ${
+        className={`flex flex-col max-w-[85%] sm:max-w-md lg:max-w-lg xl:max-w-xl ${
           isOwn ? "items-end" : "items-start"
         }`}
       >
@@ -182,9 +182,9 @@ export default function ChatMessage({
                   <img
                     src={message.file_url}
                     alt={message.file_name}
-                    className="max-w-[280px] sm:max-w-xs md:max-w-sm rounded-2xl cursor-pointer hover:opacity-95 transition object-contain"
+                    className="max-w-[320px] sm:max-w-sm md:max-w-md lg:max-w-lg rounded-2xl cursor-pointer hover:opacity-95 transition object-contain"
                     onClick={() => window.open(message.file_url, "_blank")}
-                    style={{ maxHeight: "400px" }}
+                    style={{ maxHeight: "500px" }}
                   />
                 </div>
               )}
