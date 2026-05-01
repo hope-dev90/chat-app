@@ -55,6 +55,7 @@ export const getGroupedReactions = async (messageId) => {
         `SELECT
             r.emoji_type,
             r.standard_emoji,
+            ce.id as custom_emoji_id,
             ce.name as custom_emoji_name,
             ce.image_url as custom_emoji_url,
             COUNT(*) as count,
@@ -66,6 +67,7 @@ export const getGroupedReactions = async (messageId) => {
          GROUP BY 
             r.emoji_type,
             r.standard_emoji,
+            ce.id,
             ce.name,
             ce.image_url`,
         [messageId]

@@ -24,6 +24,12 @@ export default function ChatMessage({
     const [editText, setEditText] = useState(message.message);
     const menuRef = useRef(null);
 
+    useEffect(() => {
+        if (!editing) {
+            setEditText(message.message || '');
+        }
+    }, [message.message, editing]);
+
     // Close menu on outside click
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -176,7 +182,7 @@ export default function ChatMessage({
 
                             {/* File */}
                             {message.file_url && !isImage(message.file_type) && (
-                                
+                                <a
                                     href={message.file_url}
                                     target="_blank"
                                     rel="noreferrer"
@@ -381,7 +387,8 @@ export default function ChatMessage({
                                             handleStandardReact(reaction.standard_emoji);
                                         } else {
                                             handleCustomReact({
-                                                id: reaction.custom_emoji_id
+                                                id: reaction.custom_emoji_id,
+                                                name: reaction.custom_emoji_name
                                             });
                                         }
                                     }}
