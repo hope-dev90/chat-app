@@ -81,6 +81,7 @@ export default function Login() {
                                 value={formData.email}
                                 onChange={handleChange}
                                 placeholder="Enter your email"
+                                autoComplete="email"
                                 required
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                             />
@@ -97,6 +98,7 @@ export default function Login() {
                                 value={formData.password}
                                 onChange={handleChange}
                                 placeholder="Enter your password"
+                                autoComplete="current-password"
                                 required
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                             />

@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ override: true });
 
 import express from 'express';
 import { createServer } from 'http';
@@ -25,6 +25,7 @@ const io = new Server(httpServer, {
 });
 
 const port = process.env.PORT || 3000;
+const host = process.env.HOST || '0.0.0.0';
 
 // ─── Middlewares ───────────────────────────────────────────────
 app.use(cors());
@@ -78,7 +79,7 @@ httpServer.on('error', (error) => {
 const start = async () => {
     try {
         await connectDB();
-        httpServer.listen(port, () => {
+        httpServer.listen(port, host, () => {
             console.log(`🚀 Server running on port ${port}`);
         });
     } catch (error) {

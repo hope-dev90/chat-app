@@ -95,6 +95,7 @@ export default function Register() {
                                 value={formData.name}
                                 onChange={handleChange}
                                 placeholder="Enter your full name"
+                                autoComplete="name"
                                 required
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                             />
@@ -111,6 +112,7 @@ export default function Register() {
                                 value={formData.email}
                                 onChange={handleChange}
                                 placeholder="Enter your email"
+                                autoComplete="email"
                                 required
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                             />
@@ -158,6 +160,7 @@ export default function Register() {
                                 value={formData.password}
                                 onChange={handleChange}
                                 placeholder="Min 6 characters"
+                                autoComplete="new-password"
                                 required
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                             />
@@ -174,6 +177,7 @@ export default function Register() {
                                 value={formData.confirmPassword}
                                 onChange={handleChange}
                                 placeholder="Repeat your password"
+                                autoComplete="new-password"
                                 required
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                             />

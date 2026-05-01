@@ -10,6 +10,7 @@ import {
     markEmailVerified,
     updatePassword
 } from '../models/userModel.js';
+import { sendOtpEmail } from '../utils/sendEmail.js';
 
 // ─── Generate JWT ──────────────────────────────────────────────
 const generateToken = (id) => {
@@ -21,6 +22,22 @@ const generateToken = (id) => {
 // ─── Generate OTP ──────────────────────────────────────────────
 const generateOtp = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+const getDatabaseErrorMessage = (error) => {
+    if (error.code === '42P01') {
+        return 'Database tables are missing. Run npm run db:setup, then try again.';
+    }
+
+    if (error.code === '42703') {
+        return `Database column is missing: ${error.column || error.message}. Run npm run db:setup, then try again.`;
+    }
+
+    if (error.code === '23505') {
+        return 'Email already exists';
+    }
+
+    return null;
 };
 
 // ─── Register ──────────────────────────────────────────────────
@@ -71,8 +88,12 @@ export const register = async (req, res) => {
         // Save OTP
         await saveOtp(email, otp, expiresAt);
 
-        // TODO: Send OTP via email (add mailer here)
-        console.log(`OTP for ${email}: ${otp}`);
+        await sendOtpEmail({
+            to: email,
+            otp,
+            purpose: 'verify your email'
+        });
+        console.log(`Verification OTP sent to ${email}`);
 
         return res.status(201).json({
             success: true,
@@ -87,6 +108,15 @@ export const register = async (req, res) => {
 
     } catch (error) {
         console.error('register error:', error);
+        const databaseMessage = getDatabaseErrorMessage(error);
+
+        if (databaseMessage) {
+            return res.status(error.code === '23505' ? 400 : 500).json({
+                success: false,
+                message: databaseMessage
+            });
+        }
+
         return res.status(500).json({
             success: false,
             message: 'Something went wrong'
@@ -190,6 +220,15 @@ export const login = async (req, res) => {
 
     } catch (error) {
         console.error('login error:', error);
+        const databaseMessage = getDatabaseErrorMessage(error);
+
+        if (databaseMessage) {
+            return res.status(500).json({
+                success: false,
+                message: databaseMessage
+            });
+        }
+
         return res.status(500).json({
             success: false,
             message: 'Something went wrong'
@@ -239,8 +278,12 @@ export const forgotPassword = async (req, res) => {
 
         await saveOtp(email, otp, expiresAt);
 
-        // TODO: Send OTP via email
-        console.log(`Reset OTP for ${email}: ${otp}`);
+        await sendOtpEmail({
+            to: email,
+            otp,
+            purpose: 'reset your password'
+        });
+        console.log(`Password reset OTP sent to ${email}`);
 
         return res.status(200).json({
             success: true,
