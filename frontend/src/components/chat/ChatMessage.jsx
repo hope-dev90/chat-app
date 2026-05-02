@@ -128,7 +128,7 @@ export default function ChatMessage({
       {/* ── Avatar ─────────────────────────────────── */}
       <div className="flex-shrink-0 w-8">
         {!isOwn && showAvatar && (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#f5a4cf] to-[#8f72ff] flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs font-bold">
             {message.sender_name?.[0]?.toUpperCase()}
           </div>
         )}
@@ -166,8 +166,8 @@ export default function ChatMessage({
                 <div
                   className={`rounded-[22px] px-4 py-2.5 ${
                     isOwn
-                      ? "bg-[#6429ef] text-white"
-                      : "bg-[#efefef] text-[#111827]"
+                      ? "bg-gray-600 text-white"
+                      : "bg-gray-100 text-gray-800"
                   } ${message.file_url && isImage(message.file_type) ? "mb-2" : ""}`}
                 >
                   <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
@@ -194,8 +194,8 @@ export default function ChatMessage({
                 <div
                   className={`rounded-[22px] px-4 py-2.5 ${
                     isOwn
-                      ? "bg-[#6429ef] text-white"
-                      : "bg-[#efefef] text-[#111827]"
+                      ? "bg-gray-600 text-white"
+                      : "bg-gray-100 text-gray-800"
                   }`}
                 >
                   <a
@@ -367,7 +367,7 @@ export default function ChatMessage({
               <textarea
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
-                className="bg-white text-slate-800 text-sm rounded-xl px-3 py-2 border border-[#8f72ff] focus:outline-none resize-none min-w-48 shadow-sm"
+                className="bg-white text-slate-800 text-sm rounded-xl px-3 py-2 border border-gray-300 focus:outline-none resize-none min-w-48 shadow-sm"
                 rows={2}
                 autoFocus
                 onKeyDown={(e) => {
@@ -381,7 +381,7 @@ export default function ChatMessage({
               <div className="flex gap-2">
                 <button
                   onClick={handleEditSubmit}
-                  className="bg-[#6429ef] hover:bg-[#5220c7] text-white text-xs px-3 py-1 rounded-lg transition"
+                  className="bg-gray-600 hover:bg-gray-700 text-white text-xs px-3 py-1 rounded-lg transition"
                 >
                   Save
                 </button>

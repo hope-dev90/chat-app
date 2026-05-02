@@ -45,6 +45,7 @@ const canAccessRoom = async (socket, roomType, otherUserId) => {
         if (role === 'mentor') return await isApprovedPair(otherUserId, userId);
     }
 
+    console.warn(`canAccessRoom: unknown roomType "${roomType}" for user ${socket.user.name}`);
     return false;
 };
 

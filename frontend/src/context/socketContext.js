@@ -8,24 +8,33 @@ export const SocketProvider = ({ children }) => {
     const { token } = useContext(AuthContext);
     const [socket, setSocket] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState([]);
+    const [connected, setConnected] = useState(false);
 
     useEffect(() => {
         if (!token) return;
 
-        // Connect to socket with JWT
         const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000', {
-            auth: { token }
+            auth: { token },
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
         });
 
         newSocket.on('connect', () => {
-            console.log('Socket connected ✅');
+            console.log('✅ Socket connected:', newSocket.id);
+            setConnected(true);
+        });
+
+        newSocket.on('disconnect', (reason) => {
+            console.warn('⚠️ Socket disconnected:', reason);
+            setConnected(false);
         });
 
         newSocket.on('connect_error', (err) => {
-            console.error('Socket error:', err.message);
+            console.error('❌ Socket connect_error:', err.message);
+            setConnected(false);
         });
 
-        // Track online users
         newSocket.on('userOnline', ({ userId }) => {
             setOnlineUsers(prev => [...new Set([...prev, userId])]);
         });
@@ -38,11 +47,12 @@ export const SocketProvider = ({ children }) => {
 
         return () => {
             newSocket.disconnect();
+            setConnected(false);
         };
     }, [token]);
 
     return (
-        <SocketContext.Provider value={{ socket, onlineUsers }}>
+        <SocketContext.Provider value={{ socket, onlineUsers, connected }}>
             {children}
         </SocketContext.Provider>
     );

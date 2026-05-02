@@ -1,168 +1,202 @@
 import { useState, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
-import { SocketContext } from '../context/SocketContext';
+import { AuthContext } from '../context/authContext';
+import { SocketContext } from '../context/socketContext';
 import ChatBox from '../components/chat/ChatBox';
-import Sidebar from '../components/layout/sidebar';
-import MentorList from '../components/mentor/MentorList';
-import DMList from '../components/chat/DMList';
 
+// ── Color System ───────────────────────────────────────────────
+const colors = {
+    primary: '#111827',
+    secondary: '#6B7280',
+    border: '#E5E7EB',
+    background: '#FFFFFF',
+    hover: '#F3F4F6',
+    active: '#E5E7EB',
+    accent: '#2563EB',
+};
+
+// ── Icons ──────────────────────────────────────────────────────
+const Icon = ({ d, size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d={d} />
+    </svg>
+);
+
+const icons = {
+    messages: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
+    hash: "M4 9h16M4 15h16M10 3L8 21M16 3l-2 18",
+    users: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8",
+    bell: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18",
+    settings: "M12 15a3 3 0 1 0 0-6",
+    heart: "M20.84 4.61a5.5 5.5 0 0 0-7.78 0",
+    plus: "M12 5v14M5 12h14",
+    back: "M19 12H5M12 19l-7-7 7-7",
+    search: "M21 21l-6-6m2-5a7 7 0 1 1-14 0",
+    spark: "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
+};
+
+// ── Nav Item ───────────────────────────────────────────────────
+const NavItem = ({ iconPath, active, onClick }) => (
+    <button onClick={onClick} style={{
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        background: active ? colors.primary : 'transparent',
+        color: active ? '#fff' : colors.secondary,
+        border: 'none',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    }}>
+        <Icon d={iconPath} />
+    </button>
+);
+
+// ── Conversation Item ──────────────────────────────────────────
+const ConversationItem = ({ name, preview, active, onClick }) => (
+    <div onClick={onClick} style={{
+        display: 'flex',
+        gap: 12,
+        padding: '10px 16px',
+        borderRadius: 10,
+        cursor: 'pointer',
+        background: active ? colors.active : 'transparent',
+    }}>
+        <div style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            background: colors.hover,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 600,
+            color: colors.primary,
+        }}>
+            {name[0]}
+        </div>
+
+        <div>
+            <p style={{ margin: 0, fontWeight: 600 }}>{name}</p>
+            <p style={{ margin: 0, fontSize: 13, color: colors.secondary }}>{preview}</p>
+        </div>
+    </div>
+);
+
+// ── Main ───────────────────────────────────────────────────────
 export default function GirlDashboard() {
     const { user, logout } = useContext(AuthContext);
-    const { onlineUsers } = useContext(SocketContext);
 
-    const [activeTab, setActiveTab] = useState('general');
-    const [activeDM, setActiveDM] = useState(null);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [activeNav, setActiveNav] = useState('messages');
+    const [activeChat, setActiveChat] = useState(null);
+    const [search, setSearch] = useState('');
 
-    // Get current room based on active tab
-    const getCurrentRoom = () => {
-        if (activeTab === 'general') return { roomType: 'general', otherUserId: null };
-        if (activeTab === 'girls') return { roomType: 'girls', otherUserId: null };
-        if (activeTab === 'mentor') return { roomType: 'mentor', otherUserId: activeDM?.id };
-        if (activeTab === 'dm') return { roomType: 'dm', otherUserId: activeDM?.id };
-        return null;
-    };
-
-    const tabs = [
-        { id: 'general', label: '🌍 General', desc: 'Everyone' },
-        { id: 'girls', label: '👩‍👧 Girls', desc: 'Girls only' },
-        { id: 'mentor', label: '🧑‍🏫 Mentor', desc: 'Your mentor' },
-        { id: 'dm', label: '💬 DMs', desc: 'Private chats' },
+    const conversations = [
+        { id: 1, name: 'General Community', preview: 'Start chatting...' },
+        { id: 2, name: 'Girls Only', preview: 'Safe space 💜' },
     ];
 
     return (
-        <div className="h-screen w-screen bg-gray-950 flex overflow-hidden fixed inset-0">
+        <div style={{
+            height: '100vh',
+            display: 'flex',
+            fontFamily: "'Inter', 'Segoe UI', sans-serif",
+            background: colors.background,
+        }}>
 
-            {/* ── Sidebar - FIXED/STATIC ───────────────── */}
-            <div className={`
-                fixed inset-y-0 left-0 z-50 w-64 bg-black transform transition-transform duration-300
-                lg:relative lg:translate-x-0 flex-shrink-0
-                ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            `}>
-                <Sidebar
-                    user={user}
-                    tabs={tabs}
-                    activeTab={activeTab}
-                    onTabChange={(tab) => {
-                        setActiveTab(tab);
-                        setActiveDM(null);
-                        setSidebarOpen(false);
-                    }}
-                    onLogout={logout}
-                    onlineUsers={onlineUsers}
-                />
+            {/* Sidebar */}
+            <div style={{
+                width: 70,
+                borderRight: `1px solid ${colors.border}`,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: 12,
+            }}>
+                <div style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: colors.primary,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    marginBottom: 20,
+                }}>
+                    <Icon d={icons.spark} />
+                </div>
+
+                <NavItem iconPath={icons.heart} active={activeNav === 'messages'} onClick={() => setActiveNav('messages')} />
+
+                <div style={{ marginTop: 'auto' }}>
+                    <div onClick={logout} style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        background: colors.primary,
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                    }}>
+                        {user?.name?.[0]}
+                    </div>
+                </div>
             </div>
 
-            {/* Sidebar overlay for mobile - FIXED */}
-            {sidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
+            {/* Conversations */}
+            <div style={{
+                width: 300,
+                borderRight: `1px solid ${colors.border}`,
+                display: 'flex',
+                flexDirection: 'column',
+            }}>
+                <div style={{ padding: 20 }}>
+                    <h2 style={{ margin: 0 }}>Messages</h2>
 
-            {/* ── Main Content ────────────────────────────── */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-                {/* Top navbar - FIXED/STATIC */}
-                <div className="flex-shrink-0 bg-black border-b border-gray-800 px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-
-                        {/* Mobile menu button */}
-                        <button
-                            onClick={() => setSidebarOpen(true)}
-                            className="lg:hidden text-gray-400 hover:text-white"
-                        >
-                            ☰
-                        </button>
-
-                        {/* Current room info */}
-                        <div>
-                            <h2 className="text-white font-semibold">
-                                {activeTab === 'general' && '🌍 General Community'}
-                                {activeTab === 'girls' && '👩‍👧 Girls Community'}
-                                {activeTab === 'mentor' && `🧑‍🏫 ${activeDM?.name || 'My Mentor'}`}
-                                {activeTab === 'dm' && `💬 ${activeDM?.name || 'Direct Messages'}`}
-                            </h2>
-                            <p className="text-gray-500 text-xs">
-                                {activeTab === 'general' && 'Chat with everyone'}
-                                {activeTab === 'girls' && 'Girls only space'}
-                                {activeTab === 'mentor' && 'Chat with your mentor'}
-                                {activeTab === 'dm' && 'Private conversation'}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* User info */}
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                        <span className="text-gray-300 text-sm hidden sm:block">
-                            {user?.name}
-                        </span>
-                    </div>
+                    <input
+                        placeholder="Search..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        style={{
+                            marginTop: 12,
+                            width: '100%',
+                            padding: 10,
+                            borderRadius: 8,
+                            border: `1px solid ${colors.border}`,
+                        }}
+                    />
                 </div>
 
-                {/* ── Content Area ────────────────────────── */}
-                <div className="flex-1 flex overflow-hidden">
-
-                    {/* General Chat */}
-                    {activeTab === 'general' && (
-                        <ChatBox
-                            roomType="general"
-                            otherUserId={null}
-                            key="general"
+                <div style={{ padding: 10 }}>
+                    {conversations.map(c => (
+                        <ConversationItem
+                            key={c.id}
+                            {...c}
+                            active={activeChat?.id === c.id}
+                            onClick={() => setActiveChat(c)}
                         />
-                    )}
-
-                    {/* Girls Chat */}
-                    {activeTab === 'girls' && (
-                        <ChatBox
-                            roomType="girls"
-                            otherUserId={null}
-                            key="girls"
-                        />
-                    )}
-
-                    {/* Mentor Chat */}
-                    {activeTab === 'mentor' && (
-                        <div className="flex flex-1 overflow-hidden">
-                            {!activeDM ? (
-                                <MentorList
-                                    onSelectMentor={(mentor) => setActiveDM(mentor)}
-                                />
-                            ) : (
-                                <ChatBox
-                                    roomType="mentor"
-                                    otherUserId={activeDM.id}
-                                    key={`mentor-${activeDM.id}`}
-                                    onBack={() => setActiveDM(null)}
-                                    chatName={activeDM.name}
-                                />
-                            )}
-                        </div>
-                    )}
-
-                    {/* DMs */}
-                    {activeTab === 'dm' && (
-                        <div className="flex flex-1 overflow-hidden">
-                            {!activeDM ? (
-                                <DMList
-                                    onSelectUser={(dmUser) => setActiveDM(dmUser)}
-                                    onlineUsers={onlineUsers}
-                                />
-                            ) : (
-                                <ChatBox
-                                    roomType="dm"
-                                    otherUserId={activeDM.id}
-                                    key={`dm-${activeDM.id}`}
-                                    onBack={() => setActiveDM(null)}
-                                    chatName={activeDM.name}
-                                />
-                            )}
-                        </div>
-                    )}
-
+                    ))}
                 </div>
+            </div>
+
+            {/* Chat Area */}
+            <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+                {!activeChat ? (
+                    <div style={{
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: colors.secondary,
+                    }}>
+                        Select a conversation
+                    </div>
+                ) : (
+                    <ChatBox key={activeChat.id} />
+                )}
             </div>
         </div>
     );

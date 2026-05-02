@@ -1,10 +1,11 @@
-import { useState, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
-import { SocketContext } from '../context/SocketContext';
+import { useState, useContext, useEffect } from 'react';
+import { AuthContext } from '../context/authContext';
+import { SocketContext } from '../context/socketContext';
 import ChatBox from '../components/chat/ChatBox';
-import MentorSidebar from '../components/layout/MentorSidebar';
-import PendingRequests from '../components/mentor/PendingRequests';
+import MentorSidebar from '../components/layout/mentorSideBar';
+import PendingRequests from '../components/mentor/pendingRequest';
 import MenteeList from '../components/mentor/MenteeList';
+import api from '../api/axios';
 
 export default function MentorDashboard() {
     const { user, logout } = useContext(AuthContext);
@@ -55,7 +56,7 @@ export default function MentorDashboard() {
             )}
 
             {/* ── Main Content ────────────────────────────── */}
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 min-h-0">
 
                 {/* Top navbar */}
                 <div className="bg-black border-b border-gray-800 px-4 py-3 flex items-center justify-between">
@@ -165,9 +166,6 @@ export default function MentorDashboard() {
 }
 
 // ── DM List for Mentor ─────────────────────────────────────────
-import { useState, useEffect } from 'react';
-import api from '../api/axios';
-
 function DMListMentor({ onSelectUser, onlineUsers }) {
     const [users, setUsers] = useState([]);
     const [search, setSearch] = useState('');

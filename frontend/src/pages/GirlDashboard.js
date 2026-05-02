@@ -110,11 +110,11 @@ export default function GirlDashboard() {
     };
 
     return (
-        <main className="min-h-screen bg-[#8f72ff] p-0 text-[#202134] md:p-5">
-            <section className="mx-auto grid min-h-screen max-w-6xl grid-cols-1 overflow-hidden bg-white shadow-2xl md:min-h-[720px] md:grid-cols-[72px_280px_minmax(0,1fr)_260px] md:rounded-sm">
+        <main className="h-screen bg-[#F9FAFB] p-0 text-[#111827] md:p-5 overflow-hidden">
+            <section className="mx-auto grid h-full max-w-6xl grid-cols-1 overflow-hidden bg-white shadow-sm md:grid-cols-[72px_280px_minmax(0,1fr)_260px] md:rounded-lg border border-[#E5E7EB]">
                 <Rail user={user} logout={logout} />
 
-                <aside className="border-r border-[#f0eff8] bg-[#fbfbff] px-5 py-6">
+                <aside className="border-r border-[#E5E7EB] bg-[#F9FAFB] px-5 py-6">
                     <SearchBox value={search} onChange={setSearch} placeholder="Search contact" />
 
                     <div className="mt-7 space-y-3">
@@ -144,13 +144,13 @@ export default function GirlDashboard() {
                     </div>
                 </aside>
 
-                <section className="flex min-h-[640px] flex-col bg-white">
+                <section className="flex h-full flex-col bg-white overflow-hidden">
                     <Header
                         title={active.data?.name || active.data?.title || 'Girls Circle'}
                         online
                     />
 
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 overflow-hidden min-h-0">
                         {active.kind === 'chat' && (
                             <ChatBox
                                 roomType={active.data.roomType}
@@ -207,16 +207,16 @@ export default function GirlDashboard() {
 
 function Rail({ user, logout }) {
     return (
-        <aside className="hidden flex-col items-center border-r border-[#f0eff8] bg-white py-6 md:flex">
-            <div className="mb-10 h-5 w-5 rounded-lg bg-gradient-to-br from-[#6a61ff] to-[#7ee4d1]" />
-            <nav className="flex flex-1 flex-col gap-8 text-[#9aa0b8]">
+        <aside className="hidden flex-col items-center border-r border-[#E5E7EB] bg-white py-6 md:flex">
+            <div className="mb-10 h-5 w-5 rounded-lg bg-[#2563EB]" />
+            <nav className="flex flex-1 flex-col gap-8 text-[#6B7280]">
                 <IconButton icon={<ChatIcon />} active />
                 <IconButton icon={<LockIcon />} />
                 <IconButton icon={<HeartIcon />} />
                 <IconButton icon={<GridIcon />} />
                 <IconButton icon={<GearIcon />} />
             </nav>
-            <button onClick={logout} className="grid h-10 w-10 place-items-center rounded-full bg-[#8f72ff] text-sm font-bold text-white">
+            <button onClick={logout} className="grid h-10 w-10 place-items-center rounded-full bg-[#111827] text-sm font-bold text-white">
                 {user?.name?.[0]?.toUpperCase() || 'G'}
             </button>
         </aside>
@@ -225,13 +225,13 @@ function Rail({ user, logout }) {
 
 function SearchBox({ value, onChange, placeholder }) {
     return (
-        <label className="flex h-10 items-center gap-3 rounded-sm bg-white px-3 text-[#a5a9bd] shadow-sm">
+        <label className="flex h-10 items-center gap-3 rounded-lg bg-white px-3 text-[#6B7280] shadow-sm border border-[#E5E7EB]">
             <SearchIcon />
             <input
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 placeholder={placeholder}
-                className="w-full bg-transparent text-xs outline-none placeholder:text-[#c0c4d3]"
+                className="w-full bg-transparent text-xs outline-none placeholder:text-[#9CA3AF]"
             />
         </label>
     );
@@ -239,49 +239,49 @@ function SearchBox({ value, onChange, placeholder }) {
 
 function ConversationButton({ title, subtitle, meta, accent, active, onClick }) {
     const colors = {
-        blue: 'from-[#82cef7] to-[#67aef1]',
-        teal: 'from-[#6fe3d1] to-[#54c9be]',
-        purple: 'from-[#d468f4] to-[#8f72ff]'
+        blue: 'bg-[#2563EB]',
+        teal: 'bg-[#0D9488]',
+        purple: 'bg-[#374151]'
     };
 
     return (
-        <button onClick={onClick} className={`flex w-full items-center gap-3 rounded-sm p-2 text-left transition ${active ? 'bg-white shadow-md' : 'hover:bg-white'}`}>
-            <span className={`grid h-9 w-9 flex-none place-items-center rounded-full bg-gradient-to-br ${colors[accent]} text-white shadow-lg`}>
+        <button onClick={onClick} className={`flex w-full items-center gap-3 rounded-lg p-2 text-left transition ${active ? 'bg-[#F3F4F6] shadow-sm' : 'hover:bg-[#F9FAFB]'}`}>
+            <span className={`grid h-9 w-9 flex-none place-items-center rounded-lg ${colors[accent]} text-white`}>
                 <ChatDotIcon />
             </span>
             <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-bold text-[#3b3d53]">{title}</span>
-                <span className="block truncate text-[10px] text-[#a0a5b8]">{subtitle}</span>
+                <span className="block truncate text-xs font-semibold text-[#111827]">{title}</span>
+                <span className="block truncate text-[10px] text-[#6B7280]">{subtitle}</span>
             </span>
-            <span className="text-[9px] text-[#c0c4d3]">{meta}</span>
+            <span className="text-[9px] text-[#9CA3AF]">{meta}</span>
         </button>
     );
 }
 
 function Header({ title, online }) {
     return (
-        <header className="flex h-14 items-center justify-between border-b border-[#f0eff8] px-7">
-            <SearchIcon className="text-[#9da3b9]" />
+        <header className="flex h-14 items-center justify-between border-b border-[#E5E7EB] px-7">
+            <SearchIcon className="text-[#6B7280]" />
             <div className="text-center">
-                <h1 className="text-xs font-extrabold text-[#25283c]">{title}</h1>
-                {online && <span className="mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-[#43d17c]" />}
+                <h1 className="text-xs font-semibold text-[#111827]">{title}</h1>
+                {online && <span className="mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-[#22C55E]" />}
             </div>
-            <GearIcon className="text-[#9da3b9]" />
+            <GearIcon className="text-[#6B7280]" />
         </header>
     );
 }
 
 function CenteredPanel({ title, subtitle, actionLabel, disabled, onAction, message }) {
     return (
-        <div className="grid h-full place-items-center bg-[#fbfbff] px-8">
+        <div className="grid h-full place-items-center bg-[#F9FAFB] px-8">
             <div className="w-full max-w-md text-center">
-                <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-[#d468f4] to-[#8f72ff] text-white shadow-xl shadow-purple-200">
+                <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#E5E7EB] text-[#374151]">
                     <HeartIcon />
                 </div>
-                <h2 className="mt-6 text-2xl font-extrabold text-[#25283c]">{title}</h2>
-                <p className="mt-2 text-sm text-[#83889d]">{subtitle}</p>
-                {message && <p className="mt-5 rounded-sm bg-white px-4 py-3 text-xs text-[#6a61ff] shadow">{message}</p>}
-                <button disabled={disabled} onClick={onAction} className="mt-7 rounded-sm bg-[#6429ef] px-7 py-3 text-sm font-bold text-white shadow-lg shadow-purple-200 disabled:bg-[#b6b4ca]">
+                <h2 className="mt-6 text-2xl font-bold text-[#111827]">{title}</h2>
+                <p className="mt-2 text-sm text-[#6B7280]">{subtitle}</p>
+                {message && <p className="mt-5 rounded-lg bg-white px-4 py-3 text-xs text-[#2563EB] shadow-sm border border-[#E5E7EB]">{message}</p>}
+                <button disabled={disabled} onClick={onAction} className="mt-7 rounded-lg bg-[#2563EB] px-7 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#1D4ED8] transition disabled:bg-[#9CA3AF]">
                     {actionLabel}
                 </button>
             </div>
@@ -291,14 +291,14 @@ function CenteredPanel({ title, subtitle, actionLabel, disabled, onAction, messa
 
 function EmptyPanel({ title, body, actionLabel, onAction }) {
     return (
-        <div className="grid h-full place-items-center bg-[#fbfbff] px-8">
+        <div className="grid h-full place-items-center bg-[#F9FAFB] px-8">
             <div className="max-w-md text-center">
-                <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#f2efff] text-[#8f72ff]">
+                <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#E5E7EB] text-[#6B7280]">
                     <ChatIcon />
                 </div>
-                <h2 className="mt-6 text-2xl font-extrabold text-[#25283c]">{title}</h2>
-                <p className="mt-3 text-sm leading-6 text-[#83889d]">{body}</p>
-                <button onClick={onAction} className="mt-7 rounded-sm bg-[#6429ef] px-7 py-3 text-sm font-bold text-white shadow-lg shadow-purple-200">
+                <h2 className="mt-6 text-2xl font-bold text-[#111827]">{title}</h2>
+                <p className="mt-3 text-sm leading-6 text-[#6B7280]">{body}</p>
+                <button onClick={onAction} className="mt-7 rounded-lg bg-[#2563EB] px-7 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#1D4ED8] transition">
                     {actionLabel}
                 </button>
             </div>
@@ -308,14 +308,14 @@ function EmptyPanel({ title, body, actionLabel, onAction }) {
 
 function DetailsPanel({ user, title, subtitle, info }) {
     return (
-        <aside className="hidden border-l border-[#f0eff8] bg-[#fbfbff] px-6 py-7 md:block">
+        <aside className="hidden border-l border-[#E5E7EB] bg-[#F9FAFB] px-6 py-7 md:block">
             <div className="text-center">
-                <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-[#f5a4cf] to-[#8f72ff] text-white shadow-xl shadow-purple-200">
+                <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#374151] text-white">
                     <DiamondIcon />
                 </div>
-                <h2 className="mt-5 text-sm font-extrabold text-[#31334a]">{title}</h2>
-                <p className="mt-1 text-[10px] text-[#9ba0b4]">{subtitle}</p>
-                <div className="mt-6 flex justify-center gap-5 text-[#9ba0b4]">
+                <h2 className="mt-5 text-sm font-semibold text-[#111827]">{title}</h2>
+                <p className="mt-1 text-[10px] text-[#6B7280]">{subtitle}</p>
+                <div className="mt-6 flex justify-center gap-5 text-[#6B7280]">
                     <PhoneIcon />
                     <VideoIcon />
                     <MailIcon />
@@ -323,28 +323,28 @@ function DetailsPanel({ user, title, subtitle, info }) {
             </div>
 
             <div className="mt-8">
-                <h3 className="text-xs font-extrabold text-[#31334a]">Connection</h3>
-                <div className="mt-3 space-y-2 rounded-sm bg-white p-4 shadow-sm">
+                <h3 className="text-xs font-semibold text-[#111827]">Connection</h3>
+                <div className="mt-3 space-y-2 rounded-lg bg-white p-4 shadow-sm border border-[#E5E7EB]">
                     {info.map(([label, value]) => (
                         <div key={label} className="flex justify-between gap-3 text-[11px]">
-                            <span className="text-[#9ba0b4]">{label}</span>
-                            <span className="font-bold text-[#31334a]">{value}</span>
+                            <span className="text-[#6B7280]">{label}</span>
+                            <span className="font-semibold text-[#111827]">{value}</span>
                         </div>
                     ))}
                     <div className="flex justify-between gap-3 text-[11px]">
-                        <span className="text-[#9ba0b4]">Signed in</span>
-                        <span className="font-bold text-[#31334a]">{user?.name}</span>
+                        <span className="text-[#6B7280]">Signed in</span>
+                        <span className="font-semibold text-[#111827]">{user?.name}</span>
                     </div>
                 </div>
             </div>
 
             <div className="mt-8">
-                <h3 className="text-xs font-extrabold text-[#31334a]">Media</h3>
+                <h3 className="text-xs font-semibold text-[#111827]">Media</h3>
                 <div className="mt-3 space-y-3">
                     {['Chat support.pdf', 'Community guide.png', 'Mentor notes.doc'].map((item) => (
-                        <div key={item} className="flex items-center gap-3 rounded-sm bg-white p-3 shadow-sm">
-                            <span className="grid h-8 w-8 place-items-center rounded-sm bg-[#76c9f5] text-[10px] font-bold text-white">File</span>
-                            <span className="truncate text-[11px] text-[#73788c]">{item}</span>
+                        <div key={item} className="flex items-center gap-3 rounded-lg bg-white p-3 shadow-sm border border-[#E5E7EB]">
+                            <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#2563EB] text-[10px] font-bold text-white">File</span>
+                            <span className="truncate text-[11px] text-[#6B7280]">{item}</span>
                         </div>
                     ))}
                 </div>
@@ -354,7 +354,7 @@ function DetailsPanel({ user, title, subtitle, info }) {
 }
 
 function IconButton({ icon, active }) {
-    return <button className={active ? 'text-[#6429ef]' : 'hover:text-[#6429ef]'}>{icon}</button>;
+    return <button className={active ? 'text-[#2563EB]' : 'text-[#6B7280] hover:text-[#111827]'}>{icon}</button>;
 }
 
 function SearchIcon({ className = '' }) { return <svg className={`h-4 w-4 ${className}`} viewBox="0 0 24 24" fill="none"><path d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM16 16l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>; }

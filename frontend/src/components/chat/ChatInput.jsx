@@ -191,8 +191,8 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
 
             {/* ── Upload progress ────────────────────────── */}
             {uploading && (
-                <div className="mb-2 flex items-center gap-2 text-[#6429ef] text-sm">
-                    <div className="w-4 h-4 border-2 border-[#6429ef] border-t-transparent rounded-full animate-spin"></div>
+                <div className="mb-2 flex items-center gap-2 text-[#2563EB] text-sm">
+                    <div className="w-4 h-4 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin"></div>
                     {uploadProgress}
                 </div>
             )}
@@ -246,7 +246,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                             placeholder="Emoji name (e.g. party_blob)"
                             value={newEmojiName}
                             onChange={(e) => setNewEmojiName(e.target.value)}
-                            className="flex-1 bg-white text-slate-800 text-sm px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#8f72ff]/30 focus:border-[#8f72ff]"
+                            className="flex-1 bg-white text-slate-800 text-sm px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                         />
                         <button
                             onClick={() => emojiFileRef.current?.click()}
@@ -272,7 +272,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                         <button
                             onClick={handleCreateEmoji}
                             disabled={creatingEmoji}
-                            className="bg-[#6429ef] hover:bg-[#5220c7] disabled:bg-[#b6a7ef] text-white text-sm px-4 py-2 rounded-lg transition"
+                            className="bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-[#9CA3AF] text-white text-sm px-4 py-2 rounded-lg transition"
                         >
                             {creatingEmoji ? 'Creating...' : 'Create Emoji'}
                         </button>
@@ -310,7 +310,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                                 setShowCustomEmojis(false);
                                 setShowCreateEmoji(true);
                             }}
-                            className="text-[#6429ef] text-xs hover:text-[#5220c7] transition"
+                            className="text-[#2563EB] text-xs hover:text-[#1D4ED8] transition"
                         >
                             + Create New
                         </button>
@@ -387,7 +387,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                                 setShowCustomEmojis(false);
                             }}
                             title="Emoji"
-                            className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
+                            className="text-slate-600 hover:text-[#2563EB] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
                         >
                             😊
                         </button>
@@ -400,7 +400,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                                 loadCustomEmojis();
                             }}
                             title="Custom Emoji"
-                            className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
+                            className="text-slate-600 hover:text-[#2563EB] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
                         >
                             🎨
                         </button>
@@ -410,7 +410,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                             onClick={() => imageInputRef.current?.click()}
                             title="Upload Image"
                             disabled={uploading || selectedImage !== null}
-                            className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl disabled:opacity-50"
+                            className="text-slate-600 hover:text-[#2563EB] p-1.5 rounded-full hover:bg-slate-50 transition text-xl disabled:opacity-50"
                         >
                             🖼️
                         </button>
@@ -420,7 +420,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                             onClick={() => fileInputRef.current?.click()}
                             title="Upload File"
                             disabled={uploading}
-                            className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl disabled:opacity-50"
+                            className="text-slate-600 hover:text-[#2563EB] p-1.5 rounded-full hover:bg-slate-50 transition text-xl disabled:opacity-50"
                         >
                             📎
                         </button>
@@ -433,7 +433,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                                 setShowEmojiPicker(false);
                             }}
                             title="Create Custom Emoji"
-                            className="text-slate-600 hover:text-[#6429ef] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
+                            className="text-slate-600 hover:text-[#2563EB] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
                         >
                             ✨
                         </button>
@@ -462,7 +462,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                     <button
                         onClick={handleSend}
                         disabled={(!message.trim() && !selectedImage) || uploading}
-                        className="bg-transparent hover:bg-slate-50 disabled:text-slate-300 text-[#6429ef] p-2 rounded-full transition flex-shrink-0"
+                        className="bg-transparent hover:bg-slate-50 disabled:text-slate-300 text-[#2563EB] p-2 rounded-full transition flex-shrink-0"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
