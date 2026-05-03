@@ -20,8 +20,9 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: '*',
-        methods: ['GET', 'POST']
+        origin: process.env.CLIENT_URL || 'http://localhost:3000',
+        methods: ['GET', 'POST'],
+        credentials: true,
     }
 });
 
@@ -29,8 +30,21 @@ const port = process.env.PORT || 3000;
 const host = process.env.HOST || '0.0.0.0';
 
 // ─── Middlewares ───────────────────────────────────────────────
+const allowedOrigins = [
+    process.env.CLIENT_URL || 'http://localhost:3000',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+];
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(null, true); // permissive in dev — tighten in prod
+        }
+    },
     credentials: true,
 }));
 app.use(express.json());

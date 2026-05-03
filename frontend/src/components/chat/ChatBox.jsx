@@ -128,11 +128,10 @@ export default function ChatBox({
 
     // ── Handlers ───────────────────────────────────────────────
     const handleSend = ({ message, fileUrl, fileName, fileSize, fileType }) => {
-        if (!socket || !connected) {
-            console.warn('Cannot send — socket not connected');
+        if (!socket) {
+            console.warn('Cannot send — socket not available');
             return;
         }
-        console.log('Emitting sendMessage:', { roomType, otherUserId, message });
         socket.emit('sendMessage', {
             roomType, otherUserId,
             message, fileUrl, fileName, fileSize, fileType
