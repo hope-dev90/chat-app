@@ -129,7 +129,7 @@ export default function ChatMessage({
       {/* ── Avatar ─────────────────────────────────── */}
       <div className="flex-shrink-0 w-8">
         {!isOwn && showAvatar && (
-          <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs font-bold">
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#CECBF6', color: '#3C3489', fontSize: 11, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {message.sender_name?.[0]?.toUpperCase()}
           </div>
         )}
@@ -143,15 +143,11 @@ export default function ChatMessage({
       >
         {/* Sender name + time */}
         {showAvatar && (
-          <div
-            className={`flex items-center gap-2 mb-1 ${
-              isOwn ? "flex-row-reverse" : "flex-row"
-            }`}
-          >
-            <span className="text-xs font-medium text-slate-600">
+          <div className={`flex items-center gap-2 mb-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
+            <span style={{ fontSize: 11, fontWeight: 500, color: '#8B80C8' }}>
               {isOwn ? "You" : message.sender_name}
             </span>
-            <span className="text-xs text-slate-400">
+            <span style={{ fontSize: 10, color: '#B0A8D9' }}>
               {formatTime(message.created_at)}
             </span>
           </div>
@@ -162,16 +158,19 @@ export default function ChatMessage({
           {/* Message bubble */}
           {!editing ? (
             <div className="relative">
-              {/* Text message (only if no image or image + text) */}
+              {/* Text message */}
               {message.message && (
-                <div
-                  className={`rounded-[22px] px-4 py-2.5 ${
-                    isOwn
-                      ? "bg-gray-600 text-white"
-                      : "bg-gray-100 text-gray-800"
-                  } ${message.file_url && isImage(message.file_type) ? "mb-2" : ""}`}
-                >
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                <div style={{
+                  background: isOwn ? '#4B3FA0' : '#FFFFFF',
+                  color: isOwn ? '#EEEEFF' : '#2E2270',
+                  border: isOwn ? 'none' : '0.5px solid #E4DEFF',
+                  borderRadius: 16,
+                  borderBottomRightRadius: isOwn ? 4 : 16,
+                  borderBottomLeftRadius: isOwn ? 16 : 4,
+                  padding: '8px 14px',
+                  marginBottom: message.file_url && isImage(message.file_type) ? 6 : 0,
+                }}>
+                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                     <EmojiText text={message.message} />
                   </p>
                 </div>
@@ -198,38 +197,23 @@ export default function ChatMessage({
 
               {/* File */}
               {message.file_url && !isImage(message.file_type) && (
-                <div
-                  className={`rounded-[22px] px-4 py-2.5 ${
-                    isOwn
-                      ? "bg-gray-600 text-white"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  <a
-                    href={message.file_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`flex items-center gap-2 p-2 rounded-lg ${
-                      isOwn ? "bg-white/15" : "bg-white"
-                    }`}
-                  >
-                    <span className="text-2xl">
-                      {message.file_type === "pdf"
-                        ? "📄"
-                        : message.file_type === "zip"
-                          ? "🗜️"
-                          : message.file_type === "doc" ||
-                              message.file_type === "docx"
-                            ? "📝"
-                            : "📎"}
+                <div style={{
+                  background: isOwn ? '#4B3FA0' : '#FFFFFF',
+                  color: isOwn ? '#EEEEFF' : '#2E2270',
+                  border: isOwn ? 'none' : '0.5px solid #E4DEFF',
+                  borderRadius: 16,
+                  borderBottomRightRadius: isOwn ? 4 : 16,
+                  borderBottomLeftRadius: isOwn ? 16 : 4,
+                  padding: '8px 14px',
+                }}>
+                  <a href={message.file_url} target="_blank" rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, background: isOwn ? 'rgba(255,255,255,0.12)' : '#F3F0FF', textDecoration: 'none' }}>
+                    <span style={{ fontSize: 20 }}>
+                      {message.file_type === 'pdf' ? '📄' : message.file_type === 'zip' ? '🗜️' : message.file_type === 'doc' || message.file_type === 'docx' ? '📝' : '📎'}
                     </span>
                     <div>
-                      <p className="text-xs font-medium truncate max-w-32">
-                        {message.file_name}
-                      </p>
-                      <p className="text-xs opacity-70">
-                        {formatSize(message.file_size)}
-                      </p>
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: isOwn ? '#EEEEFF' : '#2E2270', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{message.file_name}</p>
+                      <p style={{ margin: 0, fontSize: 11, color: isOwn ? 'rgba(238,238,255,0.65)' : '#8B80C8' }}>{formatSize(message.file_size)}</p>
                     </div>
                   </a>
                 </div>
@@ -237,12 +221,12 @@ export default function ChatMessage({
 
               {/* Edited label */}
               {message.is_edited && (
-                <p className="text-xs opacity-50 mt-1">edited</p>
+                <p style={{ margin: '2px 0 0', fontSize: 10, color: '#B0A8D9' }}>edited</p>
               )}
 
               {/* Time for non-first messages */}
               {!showAvatar && (
-                <p className="text-xs opacity-40 mt-1">
+                <p style={{ margin: '2px 0 0', fontSize: 10, color: '#B0A8D9' }}>
                   {formatTime(message.created_at)}
                 </p>
               )}
@@ -386,16 +370,12 @@ export default function ChatMessage({
                 }}
               />
               <div className="flex gap-2">
-                <button
-                  onClick={handleEditSubmit}
-                  className="bg-gray-600 hover:bg-gray-700 text-white text-xs px-3 py-1 rounded-lg transition"
-                >
+                <button onClick={handleEditSubmit}
+                  style={{ background: '#4B3FA0', color: '#fff', border: 'none', borderRadius: 8, padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>
                   Save
                 </button>
-                <button
-                  onClick={handleEditCancel}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1 rounded-lg transition"
-                >
+                <button onClick={handleEditCancel}
+                  style={{ background: '#F3F0FF', color: '#2E2270', border: 'none', borderRadius: 8, padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>
                   Cancel
                 </button>
               </div>

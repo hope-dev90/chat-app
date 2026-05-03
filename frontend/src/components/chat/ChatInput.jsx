@@ -189,7 +189,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
     };
 
     return (
-        <div className="bg-white px-4 pb-4 pt-2">
+        <div style={{ background: '#FFFFFF', padding: '10px 14px 12px' }}>
 
             {/* ── Upload progress ────────────────────────── */}
             {uploading && (
@@ -360,7 +360,15 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
             )}
 
             {/* ── Input row ──────────────────────────────── */}
-            <div className={`mx-auto flex max-w-3xl flex-col gap-2 ${selectedImagePreview ? 'rounded-xl' : 'rounded-full'} border border-slate-200 bg-white px-3 py-2 shadow-sm`}>
+            <div style={{
+                display: 'flex',
+                flexDirection: selectedImagePreview ? 'column' : 'row',
+                gap: 8,
+                background: '#F3F0FF',
+                borderRadius: 24,
+                padding: '8px 14px',
+                alignItems: selectedImagePreview ? 'stretch' : 'flex-end',
+            }}>
                 
                 {selectedImagePreview && (
                     <div className="flex gap-2 items-start">
@@ -383,60 +391,34 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                     <div className="flex flex-shrink-0 gap-1">
 
                         {/* Standard emoji */}
-                        <button
-                            onClick={() => {
-                                setShowEmojiPicker(!showEmojiPicker);
-                                setShowCustomEmojis(false);
-                            }}
-                            title="Emoji"
-                            className="text-slate-600 hover:text-[#2563EB] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
-                        >
+                        <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowCustomEmojis(false); }}
+                            title="Emoji" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '2px 4px', color: '#8B80C8' }}>
                             😊
                         </button>
 
                         {/* Custom emoji */}
-                        <button
-                            onClick={() => {
-                                setShowCustomEmojis(!showCustomEmojis);
-                                setShowEmojiPicker(false);
-                                loadCustomEmojis();
-                            }}
-                            title="Custom Emoji"
-                            className="text-slate-600 hover:text-[#2563EB] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
-                        >
+                        <button onClick={() => { setShowCustomEmojis(!showCustomEmojis); setShowEmojiPicker(false); loadCustomEmojis(); }}
+                            title="Custom Emoji" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '2px 4px', color: '#8B80C8' }}>
                             🎨
                         </button>
 
                         {/* Upload image */}
-                        <button
-                            onClick={() => imageInputRef.current?.click()}
-                            title="Upload Image"
+                        <button onClick={() => imageInputRef.current?.click()} title="Upload Image"
                             disabled={uploading || selectedImage !== null}
-                            className="text-slate-600 hover:text-[#2563EB] p-1.5 rounded-full hover:bg-slate-50 transition text-xl disabled:opacity-50"
-                        >
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '2px 4px', color: '#8B80C8', opacity: uploading || selectedImage ? 0.4 : 1 }}>
                             🖼️
                         </button>
 
                         {/* Upload file */}
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            title="Upload File"
+                        <button onClick={() => fileInputRef.current?.click()} title="Upload File"
                             disabled={uploading}
-                            className="text-slate-600 hover:text-[#2563EB] p-1.5 rounded-full hover:bg-slate-50 transition text-xl disabled:opacity-50"
-                        >
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '2px 4px', color: '#8B80C8', opacity: uploading ? 0.4 : 1 }}>
                             📎
                         </button>
 
                         {/* Create custom emoji */}
-                        <button
-                            onClick={() => {
-                                setShowCreateEmoji(!showCreateEmoji);
-                                setShowCustomEmojis(false);
-                                setShowEmojiPicker(false);
-                            }}
-                            title="Create Custom Emoji"
-                            className="text-slate-600 hover:text-[#2563EB] p-1.5 rounded-full hover:bg-slate-50 transition text-xl"
-                        >
+                        <button onClick={() => { setShowCreateEmoji(!showCreateEmoji); setShowCustomEmojis(false); setShowEmojiPicker(false); }}
+                            title="Create Custom Emoji" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '2px 4px', color: '#8B80C8' }}>
                             ✨
                         </button>
 
@@ -451,8 +433,8 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                             onKeyDown={handleKeyDown}
                             placeholder={selectedImage ? "Add a message..." : "Type a message..."}
                             rows={1}
-                            className="w-full bg-transparent text-slate-800 text-sm px-2 py-2 border-0 focus:outline-none focus:ring-0 resize-none placeholder-slate-400 max-h-32 overflow-y-auto"
-                            style={{ minHeight: '38px' }}
+                            style={{ minHeight: 38, background: 'transparent', color: '#2E2270', border: 'none', outline: 'none', resize: 'none', width: '100%', fontSize: 13, fontFamily: 'inherit', padding: '8px 4px' }}
+                            className="max-h-32 overflow-y-auto placeholder:text-[#A89ED4]"
                             onInput={(e) => {
                                 e.target.style.height = 'auto';
                                 e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
@@ -464,14 +446,9 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                     <button
                         onClick={handleSend}
                         disabled={(!message.trim() && !selectedImage) || uploading}
-                        className="bg-transparent hover:bg-slate-50 disabled:text-slate-300 text-[#2563EB] p-2 rounded-full transition flex-shrink-0"
+                        style={{ width: 30, height: 30, borderRadius: '50%', background: (!message.trim() && !selectedImage) || uploading ? '#CECBF6' : '#4B3FA0', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                     >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            className="w-5 h-5"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14">
                             <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
                         </svg>
                     </button>

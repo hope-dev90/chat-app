@@ -10,7 +10,8 @@ html, body, #root {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100%;
-  background: #F9FAFB;
+  height: 100vh;
+  background: #FAF9FF;
   font-family: 'Inter', 'Segoe UI', sans-serif;
+  color: #2E2270;
 }

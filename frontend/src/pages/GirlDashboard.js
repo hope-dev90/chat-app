@@ -4,10 +4,27 @@ import { AuthContext } from '../context/authContext';
 import { SocketContext } from '../context/socketContext';
 import ChatBox from '../components/chat/ChatBox';
 
+// ── Design tokens ──────────────────────────────────────────────
+const C = {
+    sidebarBg:   '#4B3FA0',
+    accent:      '#4B3FA0',
+    pageBg:      '#FAF9FF',
+    panelBg:     '#FFFFFF',
+    border:      '#E4DEFF',
+    lavender:    '#F3F0FF',
+    activeItem:  '#EEEDFE',
+    avatarBg:    '#CECBF6',
+    avatarText:  '#3C3489',
+    textPrimary: '#2E2270',
+    textMuted:   '#8B80C8',
+    textTime:    '#B0A8D9',
+    online:      '#5DCAA5',
+};
+
 const rooms = [
-    { id: 'general', name: 'General Community', subtitle: 'Everyone in the app', type: 'general', accent: 'blue' },
-    { id: 'girls', name: 'Girls Circle', subtitle: 'Girls-only safe space', type: 'girls', accent: 'teal' },
-    { id: 'mentor', name: 'My Mentor', subtitle: 'Guidance and support', type: 'mentor', accent: 'purple' }
+    { id: 'general', name: 'General Community', subtitle: 'Everyone in the app', type: 'general' },
+    { id: 'girls',   name: 'Girls Circle',       subtitle: 'Girls-only safe space',  type: 'girls'   },
+    { id: 'mentor',  name: 'My Mentor',           subtitle: 'Guidance and support',   type: 'mentor'  },
 ];
 
 export default function GirlDashboard() {
@@ -18,270 +35,215 @@ export default function GirlDashboard() {
     const [myMentor, setMyMentor] = useState(null);
     const [active, setActive] = useState({
         kind: 'chat',
-        data: {
-            roomType: 'general',
-            otherUserId: null,
-            name: 'General Community',
-            subtitle: 'Everyone in the app'
-        }
+        data: { roomType: 'general', otherUserId: null, name: 'General Community', subtitle: 'Everyone in the app' }
     });
     const [search, setSearch] = useState('');
     const [message, setMessage] = useState('');
 
     const loadDashboard = async () => {
-        const [mentorResponse, requestResponse, myMentorResponse] = await Promise.all([
+        const [mentorRes, requestRes, myMentorRes] = await Promise.all([
             api.get('/mentor/all'),
             api.get('/mentor/my-requests'),
-            api.get('/mentor/my-mentor').catch(() => null)
+            api.get('/mentor/my-mentor').catch(() => null),
         ]);
-
-        setMentors(mentorResponse.data.mentors || []);
-        setRequests(requestResponse.data.requests || []);
-        setMyMentor(myMentorResponse?.data?.mentor || null);
+        setMentors(mentorRes.data.mentors || []);
+        setRequests(requestRes.data.requests || []);
+        setMyMentor(myMentorRes?.data?.mentor || null);
     };
 
     useEffect(() => {
-        loadDashboard().catch((error) => {
-            setMessage(error.response?.data?.message || 'Unable to load dashboard');
-        });
+        loadDashboard().catch(err => setMessage(err.response?.data?.message || 'Unable to load dashboard'));
     }, []);
 
-    const requestedMentorIds = useMemo(() => {
-        return new Set(requests.map((request) => request.mentor_id || request.mentorId));
-    }, [requests]);
+    const requestedMentorIds = useMemo(
+        () => new Set(requests.map(r => r.mentor_id || r.mentorId)),
+        [requests]
+    );
 
-    const filteredMentors = mentors.filter((mentor) => {
-        const query = search.trim().toLowerCase();
-        if (!query) return true;
-        return mentor.name?.toLowerCase().includes(query) || mentor.email?.toLowerCase().includes(query);
+    const filteredMentors = mentors.filter(m => {
+        const q = search.trim().toLowerCase();
+        return !q || m.name?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q);
     });
-
-    const hasOtherGirls = false;
 
     const requestMentor = async (mentorId) => {
         setMessage('');
-
         try {
             const { data } = await api.post('/mentor/request', { mentorId });
             setMessage(data.message || 'Mentor request sent.');
             await loadDashboard();
-        } catch (error) {
-            setMessage(error.response?.data?.message || 'Unable to send request');
+        } catch (err) {
+            setMessage(err.response?.data?.message || 'Unable to send request');
         }
-    };
-
-    const openMentorChat = () => {
-        if (!myMentor) {
-            setActive({ kind: 'empty-mentor' });
-            return;
-        }
-
-        setActive({
-            kind: 'chat',
-            data: {
-                roomType: 'mentor',
-                otherUserId: myMentor.mentor_id,
-                name: myMentor.mentor_name,
-                subtitle: myMentor.mentor_email
-            }
-        });
     };
 
     const openRoom = (room) => {
         if (room.id === 'mentor') {
-            openMentorChat();
+            if (!myMentor) { setActive({ kind: 'empty-mentor' }); return; }
+            setActive({ kind: 'chat', data: { roomType: 'mentor', otherUserId: myMentor.mentor_id, name: myMentor.mentor_name, subtitle: myMentor.mentor_email } });
             return;
         }
-
-        if (room.id === 'girls' && !hasOtherGirls) {
-            setActive({ kind: 'empty-girls', data: room });
-            return;
-        }
-
-        setActive({
-            kind: 'chat',
-            data: {
-                roomType: room.type,
-                otherUserId: null,
-                name: room.name,
-                subtitle: room.subtitle
-            }
-        });
+        if (room.id === 'girls') { setActive({ kind: 'empty-girls', data: room }); return; }
+        setActive({ kind: 'chat', data: { roomType: room.type, otherUserId: null, name: room.name, subtitle: room.subtitle } });
     };
 
     return (
-        <main className="h-screen bg-[#F9FAFB] p-0 text-[#111827] md:p-5 overflow-hidden">
-            <section className="mx-auto grid h-full max-w-6xl grid-cols-1 overflow-hidden bg-white shadow-sm md:grid-cols-[72px_280px_minmax(0,1fr)_260px] md:rounded-lg border border-[#E5E7EB]">
-                <Rail user={user} logout={logout} />
+        <div style={{ width: '100%', height: '100vh', display: 'flex', background: C.pageBg, fontFamily: "'Inter','Segoe UI',sans-serif" }}>
 
-                <aside className="border-r border-[#E5E7EB] bg-[#F9FAFB] px-5 py-6">
-                    <SearchBox value={search} onChange={setSearch} placeholder="Search contact" />
+            {/* ── Far-left icon rail ─────────────────────── */}
+            <Rail user={user} logout={logout} />
 
-                    <div className="mt-7 space-y-3">
-                        {rooms.map((room) => (
-                            <ConversationButton
-                                key={room.id}
-                                title={room.name}
-                                subtitle={room.subtitle}
-                                meta={room.id === 'mentor' && myMentor ? myMentor.mentor_name : 'now'}
-                                accent={room.accent}
-                                active={active.data?.name === room.name || active.data?.roomType === room.type}
-                                onClick={() => openRoom(room)}
-                            />
-                        ))}
+            {/* ── Conversation list ──────────────────────── */}
+            <div style={{ width: 220, flexShrink: 0, borderRight: `0.5px solid ${C.border}`, background: C.panelBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ padding: '18px 14px 10px' }}>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: C.textPrimary, marginBottom: 10 }}>Messages</p>
+                    <SearchBox value={search} onChange={setSearch} placeholder="Search…" />
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '4px 8px' }}>
+                    {rooms.map(room => (
+                        <ConvItem
+                            key={room.id}
+                            title={room.name}
+                            subtitle={room.id === 'mentor' && myMentor ? myMentor.mentor_name : room.subtitle}
+                            active={active.data?.roomType === room.type || active.data?.name === room.name}
+                            onClick={() => openRoom(room)}
+                        />
+                    ))}
+                    {filteredMentors.length > 0 && (
+                        <p style={{ fontSize: 11, fontWeight: 500, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 8px 4px' }}>Mentors</p>
+                    )}
+                    {filteredMentors.map(mentor => (
+                        <ConvItem
+                            key={mentor.id}
+                            title={mentor.name}
+                            subtitle={onlineUsers.includes(mentor.id) ? 'Online' : mentor.email}
+                            online={onlineUsers.includes(mentor.id)}
+                            active={active.data?.otherUserId === mentor.id}
+                            onClick={() => setActive({ kind: 'mentor-card', data: mentor })}
+                        />
+                    ))}
+                </div>
+            </div>
 
-                        {filteredMentors.map((mentor) => (
-                            <ConversationButton
-                                key={mentor.id}
-                                title={mentor.name}
-                                subtitle={onlineUsers.includes(mentor.id) ? 'Online mentor' : mentor.email}
-                                meta={requestedMentorIds.has(mentor.id) ? 'sent' : 'mentor'}
-                                accent="purple"
-                                active={active.data?.otherUserId === mentor.id}
-                                onClick={() => setActive({ kind: 'mentor-card', data: mentor })}
-                            />
-                        ))}
-                    </div>
-                </aside>
+            {/* ── Chat / main area ───────────────────────── */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: C.panelBg }}>
+                <ChatHeader title={active.data?.name || 'Girls Circle'} subtitle={active.data?.subtitle || ''} />
+                <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+                    {active.kind === 'chat' && (
+                        <ChatBox roomType={active.data.roomType} otherUserId={active.data.otherUserId} key={`${active.data.roomType}-${active.data.otherUserId || 'room'}`} />
+                    )}
+                    {active.kind === 'mentor-card' && (
+                        <CenteredPanel title={active.data.name} subtitle={active.data.email}
+                            actionLabel={requestedMentorIds.has(active.data.id) ? 'Request sent' : 'Request mentor'}
+                            disabled={requestedMentorIds.has(active.data.id)}
+                            onAction={() => requestMentor(active.data.id)} message={message} />
+                    )}
+                    {active.kind === 'empty-girls' && (
+                        <EmptyPanel title="It's just you here" body="When another girl joins, the girls-only room will open."
+                            actionLabel="Explore mentors" onAction={() => setActive(mentors[0] ? { kind: 'mentor-card', data: mentors[0] } : { kind: 'empty-mentor' })} />
+                    )}
+                    {active.kind === 'empty-mentor' && (
+                        <EmptyPanel title="No mentor connected yet" body="Request a mentor from the list to start a private chat."
+                            actionLabel="Find a mentor" onAction={() => setActive(mentors[0] ? { kind: 'mentor-card', data: mentors[0] } : { kind: 'empty-mentor' })} />
+                    )}
+                </div>
+            </div>
 
-                <section className="flex h-full flex-col bg-white overflow-hidden">
-                    <Header
-                        title={active.data?.name || active.data?.title || 'Girls Circle'}
-                        online
-                    />
-
-                    <div className="flex-1 overflow-hidden min-h-0">
-                        {active.kind === 'chat' && (
-                            <ChatBox
-                                roomType={active.data.roomType}
-                                otherUserId={active.data.otherUserId}
-                                key={`${active.data.roomType}-${active.data.otherUserId || 'room'}`}
-                            />
-                        )}
-
-                        {active.kind === 'mentor-card' && (
-                            <CenteredPanel
-                                title={active.data.name}
-                                subtitle={active.data.email}
-                                actionLabel={requestedMentorIds.has(active.data.id) ? 'Request sent' : 'Request mentor'}
-                                disabled={requestedMentorIds.has(active.data.id)}
-                                onAction={() => requestMentor(active.data.id)}
-                                message={message}
-                            />
-                        )}
-
-                        {active.kind === 'empty-girls' && (
-                            <EmptyPanel
-                                title="It's just you here"
-                                body="When another girl joins, the girls-only room will open for safe conversations."
-                                actionLabel="Explore mentors"
-                                onAction={() => setActive(mentors[0] ? { kind: 'mentor-card', data: mentors[0] } : { kind: 'empty-mentor' })}
-                            />
-                        )}
-
-                        {active.kind === 'empty-mentor' && (
-                            <EmptyPanel
-                                title="No mentor connected yet"
-                                body="Request a mentor from the list, then your private mentor chat will appear here."
-                                actionLabel="Find a mentor"
-                                onAction={() => setActive(mentors[0] ? { kind: 'mentor-card', data: mentors[0] } : { kind: 'empty-mentor' })}
-                            />
-                        )}
-                    </div>
-                </section>
-
-                <DetailsPanel
-                    user={user}
-                    title={active.data?.name || 'Girls Circle'}
-                    subtitle={active.data?.subtitle || active.data?.email || 'Safe community space'}
-                    info={[
-                        ['Role', 'Girl'],
-                        ['Mentors', `${mentors.length} available`],
-                        ['Requests', `${requests.length} sent`]
-                    ]}
-                />
-            </section>
-        </main>
+            {/* ── Right detail panel ─────────────────────── */}
+            <DetailsPanel user={user}
+                title={active.data?.name || 'Girls Circle'}
+                subtitle={active.data?.subtitle || active.data?.email || 'Safe community space'}
+                info={[['Role', 'Girl'], ['Mentors', `${mentors.length}`], ['Requests', `${requests.length}`]]}
+            />
+        </div>
     );
 }
 
+// ── Rail ───────────────────────────────────────────────────────
 function Rail({ user, logout }) {
     return (
-        <aside className="hidden flex-col items-center border-r border-[#E5E7EB] bg-white py-6 md:flex">
-            <div className="mb-10 h-5 w-5 rounded-lg bg-[#2563EB]" />
-            <nav className="flex flex-1 flex-col gap-8 text-[#6B7280]">
-                <IconButton icon={<ChatIcon />} active />
-                <IconButton icon={<LockIcon />} />
-                <IconButton icon={<HeartIcon />} />
-                <IconButton icon={<GridIcon />} />
-                <IconButton icon={<GearIcon />} />
+        <div style={{ width: 56, flexShrink: 0, background: C.sidebarBg, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 0' }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+                <ChatIcon color="#fff" />
+            </div>
+            <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+                <RailBtn icon={<ChatIcon color="#fff" />} active />
+                <RailBtn icon={<LockIcon color="rgba(255,255,255,0.5)" />} />
+                <RailBtn icon={<HeartIcon color="rgba(255,255,255,0.5)" />} />
+                <RailBtn icon={<GridIcon color="rgba(255,255,255,0.5)" />} />
+                <RailBtn icon={<GearIcon color="rgba(255,255,255,0.5)" />} />
             </nav>
-            <button onClick={logout} className="grid h-10 w-10 place-items-center rounded-full bg-[#111827] text-sm font-bold text-white">
+            <button onClick={logout} style={{ width: 32, height: 32, borderRadius: '50%', background: C.avatarBg, color: C.avatarText, fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {user?.name?.[0]?.toUpperCase() || 'G'}
             </button>
-        </aside>
+        </div>
     );
 }
 
-function SearchBox({ value, onChange, placeholder }) {
+function RailBtn({ icon, active }) {
     return (
-        <label className="flex h-10 items-center gap-3 rounded-lg bg-white px-3 text-[#6B7280] shadow-sm border border-[#E5E7EB]">
-            <SearchIcon />
-            <input
-                value={value}
-                onChange={(event) => onChange(event.target.value)}
-                placeholder={placeholder}
-                className="w-full bg-transparent text-xs outline-none placeholder:text-[#9CA3AF]"
-            />
-        </label>
-    );
-}
-
-function ConversationButton({ title, subtitle, meta, accent, active, onClick }) {
-    const colors = {
-        blue: 'bg-[#2563EB]',
-        teal: 'bg-[#0D9488]',
-        purple: 'bg-[#374151]'
-    };
-
-    return (
-        <button onClick={onClick} className={`flex w-full items-center gap-3 rounded-lg p-2 text-left transition ${active ? 'bg-[#F3F4F6] shadow-sm' : 'hover:bg-[#F9FAFB]'}`}>
-            <span className={`grid h-9 w-9 flex-none place-items-center rounded-lg ${colors[accent]} text-white`}>
-                <ChatDotIcon />
-            </span>
-            <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-semibold text-[#111827]">{title}</span>
-                <span className="block truncate text-[10px] text-[#6B7280]">{subtitle}</span>
-            </span>
-            <span className="text-[9px] text-[#9CA3AF]">{meta}</span>
+        <button style={{ width: 34, height: 34, borderRadius: 10, background: active ? 'rgba(255,255,255,0.18)' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {icon}
         </button>
     );
 }
 
-function Header({ title, online }) {
+// ── Search box ─────────────────────────────────────────────────
+function SearchBox({ value, onChange, placeholder }) {
     return (
-        <header className="flex h-14 items-center justify-between border-b border-[#E5E7EB] px-7">
-            <SearchIcon className="text-[#6B7280]" />
-            <div className="text-center">
-                <h1 className="text-xs font-semibold text-[#111827]">{title}</h1>
-                {online && <span className="mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-[#22C55E]" />}
-            </div>
-            <GearIcon className="text-[#6B7280]" />
-        </header>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: C.lavender, borderRadius: 8, padding: '6px 10px' }}>
+            <SearchIcon color={C.textMuted} />
+            <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 12, color: C.textPrimary, fontFamily: 'inherit' }}
+            />
+        </div>
     );
 }
 
+// ── Conversation item ──────────────────────────────────────────
+function ConvItem({ title, subtitle, active, online, onClick }) {
+    return (
+        <button onClick={onClick} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', borderRadius: 10, background: active ? C.activeItem : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s' }}
+            onMouseEnter={e => { if (!active) e.currentTarget.style.background = C.lavender; }}
+            onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.avatarBg, color: C.avatarText, fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
+                {title[0]?.toUpperCase()}
+                {online && <span style={{ position: 'absolute', bottom: 0, right: 0, width: 8, height: 8, borderRadius: '50%', background: C.online, border: '1.5px solid #fff' }} />}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: C.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</p>
+                <p style={{ margin: 0, fontSize: 11, color: C.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{subtitle}</p>
+            </div>
+        </button>
+    );
+}
+
+// ── Chat header ────────────────────────────────────────────────
+function ChatHeader({ title, subtitle }) {
+    return (
+        <div style={{ flexShrink: 0, borderBottom: `0.5px solid ${C.border}`, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10, background: C.panelBg }}>
+            <div style={{ width: 34, height: 34, borderRadius: '50%', background: C.avatarBg, color: C.avatarText, fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {title[0]?.toUpperCase()}
+            </div>
+            <div>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: C.textPrimary }}>{title}</p>
+                {subtitle && <p style={{ margin: 0, fontSize: 11, color: C.textMuted }}>{subtitle}</p>}
+            </div>
+        </div>
+    );
+}
+
+// ── Centered / empty panels ────────────────────────────────────
 function CenteredPanel({ title, subtitle, actionLabel, disabled, onAction, message }) {
     return (
-        <div className="grid h-full place-items-center bg-[#F9FAFB] px-8">
-            <div className="w-full max-w-md text-center">
-                <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#E5E7EB] text-[#374151]">
-                    <HeartIcon />
+        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.pageBg, padding: 32 }}>
+            <div style={{ textAlign: 'center', maxWidth: 360 }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: C.activeItem, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                    <HeartIcon color={C.accent} />
                 </div>
-                <h2 className="mt-6 text-2xl font-bold text-[#111827]">{title}</h2>
-                <p className="mt-2 text-sm text-[#6B7280]">{subtitle}</p>
-                {message && <p className="mt-5 rounded-lg bg-white px-4 py-3 text-xs text-[#2563EB] shadow-sm border border-[#E5E7EB]">{message}</p>}
-                <button disabled={disabled} onClick={onAction} className="mt-7 rounded-lg bg-[#2563EB] px-7 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#1D4ED8] transition disabled:bg-[#9CA3AF]">
+                <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 500, color: C.textPrimary }}>{title}</p>
+                <p style={{ margin: '0 0 16px', fontSize: 13, color: C.textMuted }}>{subtitle}</p>
+                {message && <p style={{ margin: '0 0 16px', fontSize: 12, color: C.accent, background: C.lavender, borderRadius: 8, padding: '8px 12px' }}>{message}</p>}
+                <button disabled={disabled} onClick={onAction} style={{ background: disabled ? C.textMuted : C.accent, color: '#fff', border: 'none', borderRadius: 10, padding: '10px 24px', fontSize: 13, fontWeight: 500, cursor: disabled ? 'not-allowed' : 'pointer' }}>
                     {actionLabel}
                 </button>
             </div>
@@ -291,14 +253,14 @@ function CenteredPanel({ title, subtitle, actionLabel, disabled, onAction, messa
 
 function EmptyPanel({ title, body, actionLabel, onAction }) {
     return (
-        <div className="grid h-full place-items-center bg-[#F9FAFB] px-8">
-            <div className="max-w-md text-center">
-                <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#E5E7EB] text-[#6B7280]">
-                    <ChatIcon />
+        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.pageBg, padding: 32 }}>
+            <div style={{ textAlign: 'center', maxWidth: 360 }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: C.activeItem, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                    <ChatIcon color={C.accent} />
                 </div>
-                <h2 className="mt-6 text-2xl font-bold text-[#111827]">{title}</h2>
-                <p className="mt-3 text-sm leading-6 text-[#6B7280]">{body}</p>
-                <button onClick={onAction} className="mt-7 rounded-lg bg-[#2563EB] px-7 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#1D4ED8] transition">
+                <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 500, color: C.textPrimary }}>{title}</p>
+                <p style={{ margin: '0 0 20px', fontSize: 13, color: C.textMuted, lineHeight: 1.6 }}>{body}</p>
+                <button onClick={onAction} style={{ background: C.accent, color: '#fff', border: 'none', borderRadius: 10, padding: '10px 24px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                     {actionLabel}
                 </button>
             </div>
@@ -306,65 +268,51 @@ function EmptyPanel({ title, body, actionLabel, onAction }) {
     );
 }
 
+// ── Right details panel ────────────────────────────────────────
 function DetailsPanel({ user, title, subtitle, info }) {
     return (
-        <aside className="hidden border-l border-[#E5E7EB] bg-[#F9FAFB] px-6 py-7 md:block">
-            <div className="text-center">
-                <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#374151] text-white">
-                    <DiamondIcon />
+        <div style={{ width: 210, flexShrink: 0, borderLeft: `0.5px solid ${C.border}`, background: C.panelBg, padding: '20px 16px', overflowY: 'auto', display: 'none' }}
+            className="md:block">
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <div style={{ width: 52, height: 52, borderRadius: '50%', background: C.avatarBg, color: C.avatarText, fontSize: 18, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+                    {title[0]?.toUpperCase()}
                 </div>
-                <h2 className="mt-5 text-sm font-semibold text-[#111827]">{title}</h2>
-                <p className="mt-1 text-[10px] text-[#6B7280]">{subtitle}</p>
-                <div className="mt-6 flex justify-center gap-5 text-[#6B7280]">
-                    <PhoneIcon />
-                    <VideoIcon />
-                    <MailIcon />
+                <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 500, color: C.textPrimary }}>{title}</p>
+                <p style={{ margin: 0, fontSize: 11, color: C.textMuted }}>{subtitle}</p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 12 }}>
+                    <PhoneIcon color={C.textMuted} /><VideoIcon color={C.textMuted} /><MailIcon color={C.textMuted} />
                 </div>
             </div>
 
-            <div className="mt-8">
-                <h3 className="text-xs font-semibold text-[#111827]">Connection</h3>
-                <div className="mt-3 space-y-2 rounded-lg bg-white p-4 shadow-sm border border-[#E5E7EB]">
-                    {info.map(([label, value]) => (
-                        <div key={label} className="flex justify-between gap-3 text-[11px]">
-                            <span className="text-[#6B7280]">{label}</span>
-                            <span className="font-semibold text-[#111827]">{value}</span>
-                        </div>
-                    ))}
-                    <div className="flex justify-between gap-3 text-[11px]">
-                        <span className="text-[#6B7280]">Signed in</span>
-                        <span className="font-semibold text-[#111827]">{user?.name}</span>
+            <p style={{ fontSize: 11, fontWeight: 500, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Connection</p>
+            <div style={{ background: C.lavender, borderRadius: 12, padding: '10px 12px', marginBottom: 20 }}>
+                {[...info, ['Signed in', user?.name]].map(([label, value]) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
+                        <span style={{ color: C.textMuted }}>{label}</span>
+                        <span style={{ color: C.textPrimary, fontWeight: 500 }}>{value}</span>
                     </div>
-                </div>
+                ))}
             </div>
 
-            <div className="mt-8">
-                <h3 className="text-xs font-semibold text-[#111827]">Media</h3>
-                <div className="mt-3 space-y-3">
-                    {['Chat support.pdf', 'Community guide.png', 'Mentor notes.doc'].map((item) => (
-                        <div key={item} className="flex items-center gap-3 rounded-lg bg-white p-3 shadow-sm border border-[#E5E7EB]">
-                            <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#2563EB] text-[10px] font-bold text-white">File</span>
-                            <span className="truncate text-[11px] text-[#6B7280]">{item}</span>
-                        </div>
-                    ))}
+            <p style={{ fontSize: 11, fontWeight: 500, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Media</p>
+            {['Chat support.pdf', 'Community guide.png', 'Mentor notes.doc'].map(item => (
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, background: C.activeItem, borderRadius: 7, padding: '7px 10px', marginBottom: 6 }}>
+                    <span style={{ fontSize: 14 }}>📄</span>
+                    <span style={{ fontSize: 11, color: C.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item}</span>
                 </div>
-            </div>
-        </aside>
+            ))}
+        </div>
     );
 }
 
-function IconButton({ icon, active }) {
-    return <button className={active ? 'text-[#2563EB]' : 'text-[#6B7280] hover:text-[#111827]'}>{icon}</button>;
-}
-
-function SearchIcon({ className = '' }) { return <svg className={`h-4 w-4 ${className}`} viewBox="0 0 24 24" fill="none"><path d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM16 16l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>; }
-function ChatIcon() { return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H8l-4 4V5z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>; }
-function ChatDotIcon() { return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M5 6h14v9H8l-3 3V6z" stroke="currentColor" strokeWidth="2" /><path d="M9 10h.01M12 10h.01M15 10h.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>; }
-function LockIcon() { return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z" stroke="currentColor" strokeWidth="2" /></svg>; }
-function HeartIcon() { return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M20 6.5a5 5 0 0 0-7 0l-1 1-1-1a5 5 0 0 0-7 7L12 21l8-7.5a5 5 0 0 0 0-7z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>; }
-function GridIcon() { return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke="currentColor" strokeWidth="2" /></svg>; }
-function GearIcon({ className = '' }) { return <svg className={`h-4 w-4 ${className}`} viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" strokeWidth="2" /><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.6-.9L14.5 3h-5l-.4 3.1a7 7 0 0 0-1.6.9L5.1 6l-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.6.9l.4 3.1h5l.4-3.1a7 7 0 0 0 1.6-.9l2.4 1 2-3.5-2-1.5c.1-.3.1-.7.1-1z" stroke="currentColor" strokeWidth="2" /></svg>; }
-function DiamondIcon() { return <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 9-8 9-8-9 8-9z" stroke="currentColor" strokeWidth="2" /></svg>; }
-function PhoneIcon() { return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M6 4l3 3-2 2c1 3 3 5 6 6l2-2 3 3-2 4C9 19 5 15 4 8l2-4z" stroke="currentColor" strokeWidth="2" /></svg>; }
-function VideoIcon() { return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M4 6h11v12H4zM15 10l5-3v10l-5-3" stroke="currentColor" strokeWidth="2" /></svg>; }
-function MailIcon() { return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v12H4zM4 7l8 6 8-6" stroke="currentColor" strokeWidth="2" /></svg>; }
+// ── SVG icons ──────────────────────────────────────────────────
+function SearchIcon({ color = 'currentColor' }) { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM16 16l4 4" stroke={color} strokeWidth="2" strokeLinecap="round" /></svg>; }
+function ChatIcon({ color = 'currentColor' }) { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H8l-4 4V5z" stroke={color} strokeWidth="2" strokeLinejoin="round" /></svg>; }
+function LockIcon({ color = 'currentColor' }) { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z" stroke={color} strokeWidth="2" /></svg>; }
+function HeartIcon({ color = 'currentColor' }) { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6.5a5 5 0 0 0-7 0l-1 1-1-1a5 5 0 0 0-7 7L12 21l8-7.5a5 5 0 0 0 0-7z" stroke={color} strokeWidth="2" strokeLinejoin="round" /></svg>; }
+function GridIcon({ color = 'currentColor' }) { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke={color} strokeWidth="2" /></svg>; }
+function GearIcon({ color = 'currentColor' }) { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke={color} strokeWidth="2" /><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.6-.9L14.5 3h-5l-.4 3.1a7 7 0 0 0-1.6.9L5.1 6l-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.6.9l.4 3.1h5l.4-3.1a7 7 0 0 0 1.6-.9l2.4 1 2-3.5-2-1.5c.1-.3.1-.7.1-1z" stroke={color} strokeWidth="2" /></svg>; }
+function DiamondIcon({ color = 'currentColor' }) { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 9-8 9-8-9 8-9z" stroke={color} strokeWidth="2" /></svg>; }
+function PhoneIcon({ color = 'currentColor' }) { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 4l3 3-2 2c1 3 3 5 6 6l2-2 3 3-2 4C9 19 5 15 4 8l2-4z" stroke={color} strokeWidth="2" /></svg>; }
+function VideoIcon({ color = 'currentColor' }) { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 6h11v12H4zM15 10l5-3v10l-5-3" stroke={color} strokeWidth="2" /></svg>; }
+function MailIcon({ color = 'currentColor' }) { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v12H4zM4 7l8 6 8-6" stroke={color} strokeWidth="2" /></svg>; }

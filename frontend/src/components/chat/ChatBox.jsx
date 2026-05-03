@@ -169,134 +169,75 @@ export default function ChatBox({
     };
 
     return (
-        // ── Outer wrapper: fills parent, NO overflow ───────────
+        // ── Outer wrapper ──────────────────────────────────────
         <div style={{
             display: 'flex',
             flexDirection: 'column',
             height: '100%',
             overflow: 'hidden',
-            background: '#fff',
+            background: '#FAFAFF',
         }}>
 
             {/* ── Guard: no roomType ─────────────────────────── */}
             {!roomType ? (
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B80C8' }}>
                     Select a conversation to start chatting
                 </div>
             ) : (<>
 
-            {/* ── Back button - FIXED, never moves ──────────── */}
+            {/* ── Back button ───────────────────────────────── */}
             {onBack && (
-                <div style={{
-                    flexShrink: 0,               // ← never shrinks
-                    padding: '12px 20px',
-                    borderBottom: '1px solid #f1f5f9',
-                    background: '#fff',
-                }}>
-                    <button
-                        onClick={onBack}
-                        style={{
-                            background: 'none', border: 'none',
-                            cursor: 'pointer', color: '#94a3b8',
-                            fontSize: 14, fontWeight: 500,
-                            display: 'flex', alignItems: 'center', gap: 6,
-                        }}
-                    >
+                <div style={{ flexShrink: 0, padding: '10px 18px', borderBottom: '0.5px solid #E4DEFF', background: '#FFFFFF' }}>
+                    <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B80C8', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
                         ← Back
                     </button>
                 </div>
             )}
 
-            {/* ── Connection status banner ───────────────── */}
+            {/* ── Connection status banner ───────────────────── */}
             {!connected && (
-                <div style={{
-                    flexShrink: 0,
-                    padding: '6px 16px',
-                    background: '#FEF3C7',
-                    borderBottom: '1px solid #FDE68A',
-                    fontSize: 12,
-                    color: '#92400E',
-                    textAlign: 'center',
-                }}>
+                <div style={{ flexShrink: 0, padding: '5px 16px', background: '#FEF3C7', borderBottom: '1px solid #FDE68A', fontSize: 12, color: '#92400E', textAlign: 'center' }}>
                     ⚠️ Connecting to server...
                 </div>
             )}
 
-            {/* ── Messages area - THE ONLY THING THAT SCROLLS ── */}
-            <div style={{
-                flex: 1,               // ← takes all remaining space
-                overflowY: 'auto',     // ← ONLY this scrolls vertically
-                overflowX: 'hidden',   // ← never scroll horizontally
-                padding: '24px 16px',
-            }}>
-                <div style={{
-                    maxWidth: '900px',
-                    margin: '0 auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 4,
-                }}>
+            {/* ── Messages area — only this scrolls ─────────── */}
+            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '20px 18px' }}>
+                <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-                    {/* Chat header inside messages */}
-                    <div style={{
-                        display: 'flex', flexDirection: 'column',
-                        alignItems: 'center', textAlign: 'center',
-                        paddingBottom: 32,
-                    }}>
-                        <div style={{
-                            width: 72, height: 72, borderRadius: '50%',
-                            background: '#374151',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#fff', fontSize: 28, fontWeight: 700,
-                            marginBottom: 12,
-                        }}>
+                    {/* Chat header */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingBottom: 28 }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#CECBF6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3C3489', fontSize: 22, fontWeight: 500, marginBottom: 10 }}>
                             {conversationTitle?.[0]?.toUpperCase()}
                         </div>
-                        <h2 style={{
-                            margin: '0 0 4px', fontSize: 16,
-                            fontWeight: 600, color: '#1f2937',
-                        }}>
+                        <h2 style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 500, color: '#2E2270' }}>
                             {conversationTitle}
                         </h2>
-                        <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>
+                        <p style={{ margin: 0, fontSize: 12, color: '#8B80C8' }}>
                             Start the conversation here.
                         </p>
                     </div>
 
                     {/* Loading */}
                     {loading && (
-                        <div style={{
-                            display: 'flex', justifyContent: 'center',
-                            padding: '40px 0',
-                        }}>
-                            <p style={{ color: '#94a3b8', fontSize: 14 }}>
-                                Loading messages...
-                            </p>
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+                            <p style={{ color: '#B0A8D9', fontSize: 13 }}>Loading messages...</p>
                         </div>
                     )}
 
                     {/* Empty state */}
                     {!loading && messages.length === 0 && (
-                        <div style={{
-                            display: 'flex', flexDirection: 'column',
-                            alignItems: 'center', padding: '40px 0', gap: 8,
-                        }}>
-                            <p style={{ fontSize: 40, margin: 0 }}>💬</p>
-                            <p style={{ margin: 0, fontWeight: 600, color: '#1e293b', fontSize: 15 }}>
-                                No messages yet
-                            </p>
-                            <p style={{ margin: 0, color: '#94a3b8', fontSize: 13 }}>
-                                Be the first to say something!
-                            </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', gap: 8 }}>
+                            <p style={{ fontSize: 36, margin: 0 }}>💬</p>
+                            <p style={{ margin: 0, fontWeight: 500, color: '#2E2270', fontSize: 14 }}>No messages yet</p>
+                            <p style={{ margin: 0, color: '#8B80C8', fontSize: 12 }}>Be the first to say something!</p>
                         </div>
                     )}
 
                     {/* Messages */}
                     {messages.map((message, index) => {
                         const prevMessage = messages[index - 1];
-                        const showAvatar = !prevMessage ||
-                            prevMessage.sender_id !== message.sender_id;
-
+                        const showAvatar = !prevMessage || prevMessage.sender_id !== message.sender_id;
                         return (
                             <ChatMessage
                                 key={message.id}
@@ -313,44 +254,23 @@ export default function ChatBox({
 
                     {/* Typing indicator */}
                     {typing && (
-                        <div style={{
-                            display: 'flex', alignItems: 'center',
-                            gap: 8, padding: '4px 8px',
-                        }}>
-                            <div style={{ display: 'flex', gap: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px' }}>
+                            <div style={{ display: 'flex', gap: 3 }}>
                                 {[0, 150, 300].map(delay => (
-                                    <div key={delay} style={{
-                                        width: 8, height: 8,
-                                        borderRadius: '50%',
-                                        background: '#94a3b8',
-                                        animation: 'bounce 1s infinite',
-                                        animationDelay: `${delay}ms`,
-                                    }} />
+                                    <div key={delay} style={{ width: 6, height: 6, borderRadius: '50%', background: '#B0A8D9', animation: 'bounce 1s infinite', animationDelay: `${delay}ms` }} />
                                 ))}
                             </div>
-                            <p style={{ margin: 0, fontSize: 12, color: '#94a3b8' }}>
-                                {typing} is typing...
-                            </p>
+                            <p style={{ margin: 0, fontSize: 11, color: '#B0A8D9' }}>{typing} is typing...</p>
                         </div>
                     )}
 
-                    {/* Scroll anchor */}
                     <div ref={messagesEndRef} />
-
                 </div>
             </div>
 
-            {/* ── Chat Input - FIXED at bottom, never moves ─── */}
-            <div style={{
-                flexShrink: 0,
-                borderTop: '1px solid #f1f5f9',
-                background: '#fff',
-            }}>
-                <ChatInput
-                    onSend={handleSend}
-                    onTyping={handleTyping}
-                    roomType={roomType}
-                />
+            {/* ── Input bar — fixed at bottom ────────────────── */}
+            <div style={{ flexShrink: 0, borderTop: '0.5px solid #E4DEFF', background: '#FFFFFF' }}>
+                <ChatInput onSend={handleSend} onTyping={handleTyping} roomType={roomType} />
             </div>
 
             </>)}
