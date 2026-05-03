@@ -113,7 +113,7 @@ export default function ChatBox({
             socket.off('userStopTyping', onUserStopTyping);
             socket.off('error', onError);
         };
-    }, [socket, roomType, otherUserId]);
+    }, [socket, roomType, otherUserId, room]);
 
     // ── Scroll to bottom ───────────────────────────────────────
     const scrollToBottom = () => {
