@@ -43,7 +43,6 @@ export default function ChatBox({
     useEffect(() => {
         if (!socket) return;
 
-        // ── Named handlers so we can remove only these ─────────
         const onChatHistory = (history) => {
             setMessages(history);
             setLoading(false);
@@ -87,7 +86,7 @@ export default function ChatBox({
             setLoading(false);
         };
 
-        // Register listeners BEFORE emitting joinRoom
+        // Register all listeners first
         socket.on('chatHistory', onChatHistory);
         socket.on('receiveMessage', onReceiveMessage);
         socket.on('messageEdited', onMessageEdited);
@@ -98,10 +97,19 @@ export default function ChatBox({
         socket.on('userStopTyping', onUserStopTyping);
         socket.on('error', onError);
 
-        // Join after listeners are ready
-        socket.emit('joinRoom', { roomType, otherUserId });
+        // Join now if already connected, or wait for connect event
+        const doJoin = () => {
+            socket.emit('joinRoom', { roomType, otherUserId });
+        };
+
+        if (socket.connected) {
+            doJoin();
+        } else {
+            socket.once('connect', doJoin);
+        }
 
         return () => {
+            socket.off('connect', doJoin);
             socket.emit('leaveRoom', { room });
             socket.off('chatHistory', onChatHistory);
             socket.off('receiveMessage', onReceiveMessage);

@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState, useContext, useRef } from 'react';
+import { createContext, useEffect, useState, useContext } from 'react';
 import { io } from 'socket.io-client';
 import { AuthContext } from './authContext';
 
@@ -9,7 +9,6 @@ export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [connected, setConnected] = useState(false);
-    const socketRef = useRef(null);
 
     useEffect(() => {
         if (!token) return;
@@ -20,15 +19,12 @@ export const SocketProvider = ({ children }) => {
             reconnectionAttempts: 10,
             reconnectionDelay: 1000,
             timeout: 10000,
+            transports: ['websocket', 'polling'],
         });
-
-        socketRef.current = newSocket;
 
         newSocket.on('connect', () => {
             console.log('✅ Socket connected:', newSocket.id);
             setConnected(true);
-            // Update socket state on every (re)connect so components re-run their effects
-            setSocket(newSocket);
         });
 
         newSocket.on('disconnect', (reason) => {
@@ -49,8 +45,9 @@ export const SocketProvider = ({ children }) => {
             setOnlineUsers(prev => prev.filter(id => id !== userId));
         });
 
-        // Don't set socket until connected — avoids premature joinRoom emissions
-        // (the connect handler above sets it)
+        // Set socket immediately so ChatBox can register listeners
+        // ChatBox checks socket.connected before emitting
+        setSocket(newSocket);
 
         return () => {
             newSocket.disconnect();

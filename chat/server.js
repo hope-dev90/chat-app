@@ -6,8 +6,10 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 
 import { connectDB } from './config/db.js';
+import pool from './config/db.js';
 import { socketAuth } from './middleware/socketAuth.js';
 import chatSocket from './socket/chat.js';
 
@@ -115,6 +117,15 @@ httpServer.on('error', (error) => {
 const start = async () => {
     try {
         await connectDB();
+
+        // Auto-run schema on every startup (safe — all statements use IF NOT EXISTS)
+        const schemaPath = path.join(process.cwd(), 'schema.sql');
+        if (fs.existsSync(schemaPath)) {
+            const schema = fs.readFileSync(schemaPath, 'utf8');
+            await pool.query(schema);
+            console.log('✅ Database schema ready');
+        }
+
         httpServer.listen(port, host, () => {
             console.log(`🚀 Server running on port ${port}`);
         });
