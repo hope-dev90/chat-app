@@ -20,6 +20,8 @@ const pool = process.env.DATABASE_URL
     });
 
 export const connectDB = async () => {
+    console.log('DATABASE_URL set:', !!process.env.DATABASE_URL);
+    console.log('Connecting to DB...');
     try {
         const client = await pool.connect();
         console.log('PostgreSQL connected');
