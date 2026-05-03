@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useContext } from "react";
 import { AuthContext } from "../../context/authContext";
 import api from "../../api/axios";
+import EmojiText from "./EmojiText";
 
 // Standard emojis
 const STANDARD_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥", "👏", "🎉"];
@@ -171,20 +172,26 @@ export default function ChatMessage({
                   } ${message.file_url && isImage(message.file_type) ? "mb-2" : ""}`}
                 >
                   <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                    {message.message}
+                    <EmojiText text={message.message} />
                   </p>
                 </div>
               )}
 
               {/* Image - Instagram-style clean display */}
               {message.file_url && isImage(message.file_type) && (
-                <div className={`${message.message ? "" : ""}`}>
+                <div>
                   <img
                     src={message.file_url}
                     alt={message.file_name}
-                    className="max-w-[320px] sm:max-w-sm md:max-w-md lg:max-w-lg rounded-2xl cursor-pointer hover:opacity-95 transition object-contain"
+                    className="rounded-xl cursor-pointer hover:opacity-95 transition object-cover"
                     onClick={() => window.open(message.file_url, "_blank")}
-                    style={{ maxHeight: "500px" }}
+                    style={{ 
+                      display: 'block',
+                      maxWidth: '260px', 
+                      maxHeight: '260px',
+                      width: 'auto',
+                      height: 'auto',
+                    }}
                   />
                 </div>
               )}

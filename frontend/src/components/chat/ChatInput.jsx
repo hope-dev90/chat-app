@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import api from '../../api/axios';
+import { invalidateEmojiCache } from './EmojiText';
 
 export default function ChatInput({ onSend, onTyping, roomType }) {
     const [message, setMessage] = useState('');
@@ -177,6 +178,7 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
             setNewEmojiName('');
             setNewEmojiFile(null);
             setShowCreateEmoji(false);
+            invalidateEmojiCache();
             loadCustomEmojis();
 
         } catch (err) {
