@@ -2,6 +2,145 @@ import { useState, useRef } from 'react';
 import api from '../../api/axios';
 import { invalidateEmojiCache } from './EmojiText';
 
+// ── Design tokens ──────────────────────────────────────────────
+const C = {
+    purple:      '#4B3FA0',
+    purpleMid:   '#7F77DD',
+    purpleLight: '#CECBF6',
+    purpleFaint: '#EEEDFE',
+    purpleTint:  '#F3F0FF',
+    textPrimary: '#2E2270',
+    textMuted:   '#8B80C8',
+    textHint:    '#A89ED4',
+    textTime:    '#B0A8D9',
+    border:      '#E4DEFF',
+    white:       '#FFFFFF',
+    green:       '#5DCAA5',
+    red:         '#E24B4A',
+    redLight:    '#FCEBEB',
+};
+
+const S = {
+    // Wrapper around the whole component
+    root: {
+        background: C.white,
+        padding: '10px 14px 14px',
+        borderTop: `0.5px solid ${C.border}`,
+    },
+    // Status bar (uploading / error)
+    uploading: {
+        display: 'flex', alignItems: 'center', gap: 8,
+        marginBottom: 8, fontSize: 13, color: C.purple,
+    },
+    spinner: {
+        width: 14, height: 14,
+        border: `2px solid ${C.purpleLight}`,
+        borderTopColor: C.purple,
+        borderRadius: '50%',
+        animation: 'spin 0.7s linear infinite',
+    },
+    error: {
+        marginBottom: 8, padding: '6px 12px',
+        background: C.redLight, border: `0.5px solid #F7C1C1`,
+        borderRadius: 8, fontSize: 12, color: C.red,
+    },
+    // Image preview above input
+    previewWrap: {
+        marginBottom: 10,
+        background: C.purpleFaint,
+        border: `0.5px solid ${C.border}`,
+        borderRadius: 12, padding: '10px 12px',
+        display: 'flex', gap: 12, alignItems: 'flex-start',
+    },
+    previewImg: {
+        width: 72, height: 72, borderRadius: 10, objectFit: 'cover',
+        border: `0.5px solid ${C.border}`,
+    },
+    previewRemove: {
+        position: 'absolute', top: -6, right: -6,
+        width: 20, height: 20, borderRadius: '50%',
+        background: C.red, border: 'none',
+        color: C.white, fontSize: 13, lineHeight: 1,
+        cursor: 'pointer', display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    previewLabel: { fontSize: 11, color: C.textMuted, marginBottom: 3 },
+    previewName:  { fontSize: 13, color: C.textPrimary, fontWeight: 500 },
+    previewHint:  { fontSize: 11, color: C.textHint, marginTop: 4 },
+    // Emoji / custom-emoji / create-emoji panels
+    panel: {
+        marginBottom: 10, background: C.white,
+        border: `0.5px solid ${C.border}`,
+        borderRadius: 12, padding: '10px 12px',
+    },
+    panelHeader: {
+        display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', marginBottom: 8,
+    },
+    panelTitle: { fontSize: 11, fontWeight: 500, color: C.textMuted },
+    panelLink: {
+        fontSize: 12, color: C.purple,
+        background: 'none', border: 'none', cursor: 'pointer',
+    },
+    emojiGrid: {
+        display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4,
+    },
+    emojiBtn: {
+        fontSize: 20, background: 'none', border: 'none',
+        cursor: 'pointer', borderRadius: 8, padding: 4,
+        transition: 'background 0.1s',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+    },
+    // Create emoji form
+    createTitle: { fontSize: 13, fontWeight: 500, color: C.textPrimary, marginBottom: 10 },
+    createInput: {
+        flex: 1, background: C.purpleTint,
+        border: `0.5px solid ${C.border}`,
+        borderRadius: 8, padding: '7px 10px',
+        fontSize: 13, color: C.textPrimary, outline: 'none',
+    },
+    createPickBtn: {
+        background: C.purpleTint, border: `0.5px solid ${C.border}`,
+        borderRadius: 8, padding: '7px 12px',
+        fontSize: 13, color: C.textPrimary, cursor: 'pointer',
+    },
+    createSubmit: {
+        background: C.purple, border: 'none', borderRadius: 8,
+        padding: '7px 16px', fontSize: 13, color: C.white,
+        cursor: 'pointer', fontWeight: 500,
+    },
+    createCancel: {
+        background: C.purpleTint, border: 'none', borderRadius: 8,
+        padding: '7px 16px', fontSize: 13, color: C.textPrimary, cursor: 'pointer',
+    },
+    // Main input bar
+    inputBar: {
+        display: 'flex', alignItems: 'flex-end', gap: 8,
+        background: C.purpleTint, borderRadius: 24,
+        padding: '6px 10px 6px 14px',
+    },
+    actionBtn: {
+        background: 'none', border: 'none', cursor: 'pointer',
+        fontSize: 17, padding: '2px 3px', color: C.textMuted,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        borderRadius: 6, transition: 'background 0.12s',
+        lineHeight: 1,
+    },
+    textarea: {
+        flex: 1, background: 'transparent',
+        color: C.textPrimary, border: 'none', outline: 'none',
+        resize: 'none', fontSize: 13, fontFamily: 'inherit',
+        padding: '6px 4px', minHeight: 34, lineHeight: 1.5,
+    },
+    sendBtn: (active) => ({
+        width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+        background: active ? C.purple : C.purpleLight,
+        border: 'none', cursor: active ? 'pointer' : 'default',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'background 0.15s',
+    }),
+};
+
 export default function ChatInput({ onSend, onTyping, roomType }) {
     const [message, setMessage] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -15,65 +154,44 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
     const [newEmojiFile, setNewEmojiFile] = useState(null);
     const [creatingEmoji, setCreatingEmoji] = useState(false);
     const [emojiError, setEmojiError] = useState('');
-    
-    // New state for image preview
     const [selectedImage, setSelectedImage] = useState(null);
     const [selectedImagePreview, setSelectedImagePreview] = useState(null);
 
     const imageInputRef = useRef(null);
-    const fileInputRef = useRef(null);
-    const emojiFileRef = useRef(null);
-    const textareaRef = useRef(null);
+    const fileInputRef  = useRef(null);
+    const emojiFileRef  = useRef(null);
+    const textareaRef   = useRef(null);
 
     const STANDARD_EMOJIS = [
-        '😀', '😂', '😍', '🥰', '😊', '😎', '🤔', '😢',
-        '😮', '🥳', '😴', '🤩', '😡', '🥺', '😇', '🤗',
-        '👍', '👎', '❤️', '🔥', '✨', '🎉', '👏', '🙌',
-        '💯', '🎊', '💪', '🙏', '👋', '✌️', '🤝', '💀'
+        '😀','😂','😍','🥰','😊','😎','🤔','😢',
+        '😮','🥳','😴','🤩','😡','🥺','😇','🤗',
+        '👍','👎','❤️','🔥','✨','🎉','👏','🙌',
+        '💯','🎊','💪','🙏','👋','✌️','🤝','💀',
     ];
 
-    // ── Load custom emojis ─────────────────────────────────────
+    // ── Handlers (unchanged logic) ─────────────────────────────
     const loadCustomEmojis = async () => {
         try {
             const res = await api.get('/emoji/all');
             setCustomEmojis(res.data.emojis);
-        } catch (err) {
-            console.error(err);
-        }
+        } catch (err) { console.error(err); }
     };
 
-    // ── Handle message send ────────────────────────────────────
     const handleSend = async () => {
-        // If we have a selected image, upload it first
         if (selectedImage) {
             setUploading(true);
             setUploadProgress('Uploading image...');
             setUploadError('');
-
             try {
                 const formData = new FormData();
                 formData.append('image', selectedImage);
-
                 const res = await api.post('/upload/image', formData);
-
                 const { url, name, size, type } = res.data.file;
-
-                // Send message with file and text
-                onSend({
-                    message: message.trim(),
-                    fileUrl: url,
-                    fileName: name,
-                    fileSize: size,
-                    fileType: type
-                });
-
-                // Reset everything
+                onSend({ message: message.trim(), fileUrl: url, fileName: name, fileSize: size, fileType: type });
                 setSelectedImage(null);
                 setSelectedImagePreview(null);
                 setMessage('');
-
             } catch (err) {
-                console.error('Image upload failed:', err);
                 setUploadError(err.response?.data?.message || 'Image upload failed');
                 return;
             } finally {
@@ -81,73 +199,49 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                 setUploadProgress('');
             }
         } else if (message.trim()) {
-            // Just send text
             onSend({ message: message.trim() });
             setMessage('');
         }
-        
         textareaRef.current?.focus();
     };
 
-    // ── Handle Enter key ───────────────────────────────────────
     const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-        }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
         onTyping();
     };
 
-    // ── Insert emoji into message ──────────────────────────────
     const insertEmoji = (emoji) => {
         setMessage(prev => prev + emoji);
         setShowEmojiPicker(false);
         textareaRef.current?.focus();
     };
 
-    // ── Select image for preview ────────────────────────────────
     const handleImageSelect = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         setSelectedImage(file);
         setSelectedImagePreview(URL.createObjectURL(file));
         e.target.value = '';
     };
 
-    // ── Remove selected image ───────────────────────────────────
     const removeSelectedImage = () => {
         setSelectedImage(null);
         setSelectedImagePreview(null);
     };
 
-    // ── Upload file (still immediate for non-images) ───────────
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         setUploading(true);
         setUploadProgress('Uploading file...');
         setUploadError('');
-
         try {
             const formData = new FormData();
             formData.append('file', file);
-
             const res = await api.post('/upload/file', formData);
-
             const { url, name, size, type } = res.data.file;
-
-            onSend({
-                message: '',
-                fileUrl: url,
-                fileName: name,
-                fileSize: size,
-                fileType: type
-            });
-
+            onSend({ message: '', fileUrl: url, fileName: name, fileSize: size, fileType: type });
         } catch (err) {
-            console.error('File upload failed:', err);
             setUploadError(err.response?.data?.message || 'File upload failed');
         } finally {
             setUploading(false);
@@ -156,31 +250,20 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
         }
     };
 
-    // ── Create custom emoji ────────────────────────────────────
     const handleCreateEmoji = async () => {
-        if (!newEmojiName || !newEmojiFile) {
-            setEmojiError('Name and image are required');
-            return;
-        }
-
+        if (!newEmojiName || !newEmojiFile) { setEmojiError('Name and image are required'); return; }
         setCreatingEmoji(true);
         setEmojiError('');
-        setUploadError('');
-
         try {
             const formData = new FormData();
             formData.append('name', newEmojiName);
             formData.append('image', newEmojiFile);
-
             await api.post('/emoji/create', formData);
-
-            // Reset and reload
             setNewEmojiName('');
             setNewEmojiFile(null);
             setShowCreateEmoji(false);
             invalidateEmojiCache();
             loadCustomEmojis();
-
         } catch (err) {
             setEmojiError(err.response?.data?.message || 'Failed to create emoji');
         } finally {
@@ -188,170 +271,111 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
         }
     };
 
-    return (
-        <div style={{ background: '#FFFFFF', padding: '10px 14px 12px' }}>
+    const canSend = (message.trim() || selectedImage) && !uploading;
 
-            {/* ── Upload progress ────────────────────────── */}
+    // ── Render ─────────────────────────────────────────────────
+    return (
+        <div style={S.root}>
+
+            {/* Spinner */}
             {uploading && (
-                <div className="mb-2 flex items-center gap-2 text-[#2563EB] text-sm">
-                    <div className="w-4 h-4 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin"></div>
-                    {uploadProgress}
+                <div style={S.uploading}>
+                    <div style={S.spinner} />
+                    <span>{uploadProgress}</span>
                 </div>
             )}
 
-            {uploadError && (
-                <p className="mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
-                    {uploadError}
-                </p>
-            )}
+            {/* Error */}
+            {uploadError && <div style={S.error}>{uploadError}</div>}
 
-            {/* ── Image Preview ───────────────────────────── */}
+            {/* Image preview */}
             {selectedImagePreview && (
-                <div className="mb-3 bg-slate-50 rounded-xl p-3 border border-slate-200">
-                    <div className="flex gap-3">
-                        <div className="relative">
-                            <img
-                                src={selectedImagePreview}
-                                alt="Preview"
-                                className="w-24 h-24 rounded-xl object-cover"
-                            />
-                            <button
-                                onClick={removeSelectedImage}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 transition shadow"
-                            >
-                                ×
-                            </button>
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-xs text-slate-500 mb-1">Image selected</p>
-                            <p className="text-sm text-slate-700 truncate">{selectedImage.name}</p>
-                            <p className="text-xs text-slate-400 mt-1">Add a message below and click Send</p>
-                        </div>
+                <div style={S.previewWrap}>
+                    <div style={{ position: 'relative' }}>
+                        <img src={selectedImagePreview} alt="Preview" style={S.previewImg} />
+                        <button onClick={removeSelectedImage} style={S.previewRemove}>×</button>
+                    </div>
+                    <div>
+                        <p style={S.previewLabel}>Image selected</p>
+                        <p style={S.previewName}>{selectedImage?.name}</p>
+                        <p style={S.previewHint}>Add a message and tap send</p>
                     </div>
                 </div>
             )}
 
-            {/* ── Create custom emoji panel ──────────────── */}
+            {/* Create emoji panel */}
             {showCreateEmoji && (
-                <div className="mb-3 bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-                    <h4 className="text-slate-800 text-sm font-semibold mb-3">
-                        🎨 Create Custom Emoji
-                    </h4>
-
-                    {emojiError && (
-                        <p className="text-red-500 text-xs mb-2">{emojiError}</p>
-                    )}
-
-                    <div className="flex gap-2 mb-3">
+                <div style={S.panel}>
+                    <p style={S.createTitle}>🎨 Create custom emoji</p>
+                    {emojiError && <p style={{ fontSize: 12, color: C.red, marginBottom: 8 }}>{emojiError}</p>}
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                         <input
                             type="text"
                             placeholder="Emoji name (e.g. party_blob)"
                             value={newEmojiName}
                             onChange={(e) => setNewEmojiName(e.target.value)}
-                            className="flex-1 bg-white text-slate-800 text-sm px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                            style={S.createInput}
                         />
-                        <button
-                            onClick={() => emojiFileRef.current?.click()}
-                            className="bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm px-3 py-2 rounded-lg border border-slate-200 transition"
-                        >
-                            {newEmojiFile ? '✅ Image' : '📷 Pick Image'}
+                        <button onClick={() => emojiFileRef.current?.click()} style={S.createPickBtn}>
+                            {newEmojiFile ? '✅ Image' : '📷 Pick image'}
                         </button>
                     </div>
-
-                    {/* Preview */}
                     {newEmojiFile && (
-                        <div className="flex items-center gap-2 mb-3">
-                            <img
-                                src={URL.createObjectURL(newEmojiFile)}
-                                alt="preview"
-                                className="w-10 h-10 rounded object-cover"
-                            />
-                            <p className="text-slate-500 text-xs">:{newEmojiName}:</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                            <img src={URL.createObjectURL(newEmojiFile)} alt="preview"
+                                style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover' }} />
+                            <span style={{ fontSize: 12, color: C.textMuted }}>:{newEmojiName}:</span>
                         </div>
                     )}
-
-                    <div className="flex gap-2">
-                        <button
-                            onClick={handleCreateEmoji}
-                            disabled={creatingEmoji}
-                            className="bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-[#9CA3AF] text-white text-sm px-4 py-2 rounded-lg transition"
-                        >
-                            {creatingEmoji ? 'Creating...' : 'Create Emoji'}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={handleCreateEmoji} disabled={creatingEmoji} style={S.createSubmit}>
+                            {creatingEmoji ? 'Creating…' : 'Create emoji'}
                         </button>
-                        <button
-                            onClick={() => {
-                                setShowCreateEmoji(false);
-                                setEmojiError('');
-                                setNewEmojiName('');
-                                setNewEmojiFile(null);
-                            }}
-                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm px-4 py-2 rounded-lg transition"
-                        >
-                            Cancel
-                        </button>
+                        <button onClick={() => { setShowCreateEmoji(false); setEmojiError(''); setNewEmojiName(''); setNewEmojiFile(null); }}
+                            style={S.createCancel}>Cancel</button>
                     </div>
-
-                    {/* Hidden file input for emoji */}
-                    <input
-                        ref={emojiFileRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => setNewEmojiFile(e.target.files[0])}
-                    />
+                    <input ref={emojiFileRef} type="file" accept="image/*" style={{ display: 'none' }}
+                        onChange={(e) => setNewEmojiFile(e.target.files[0])} />
                 </div>
             )}
 
-            {/* ── Custom emoji picker ────────────────────── */}
+            {/* Custom emoji picker */}
             {showCustomEmojis && (
-                <div className="mb-3 bg-white rounded-xl p-3 border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="text-slate-500 text-xs font-medium">Custom Emojis</p>
-                        <button
-                            onClick={() => {
-                                setShowCustomEmojis(false);
-                                setShowCreateEmoji(true);
-                            }}
-                            className="text-[#2563EB] text-xs hover:text-[#1D4ED8] transition"
-                        >
-                            + Create New
+                <div style={S.panel}>
+                    <div style={S.panelHeader}>
+                        <span style={S.panelTitle}>Custom emojis</span>
+                        <button style={S.panelLink}
+                            onClick={() => { setShowCustomEmojis(false); setShowCreateEmoji(true); }}>
+                            + Create new
                         </button>
                     </div>
-                    {customEmojis.length === 0 ? (
-                        <p className="text-slate-400 text-xs text-center py-2">
-                            No custom emojis yet. Create one!
-                        </p>
-                    ) : (
-                        <div className="grid grid-cols-8 gap-2">
-                            {customEmojis.map(emoji => (
-                                <button
-                                    key={emoji.id}
-                                    onClick={() => insertEmoji(`:${emoji.name}:`)}
-                                    title={`:${emoji.name}:`}
-                                    className="hover:scale-125 transition-transform"
-                                >
-                                    <img
-                                        src={emoji.image_url}
-                                        alt={emoji.name}
-                                        className="w-8 h-8 rounded object-cover"
-                                    />
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    {customEmojis.length === 0
+                        ? <p style={{ fontSize: 12, color: C.textHint, textAlign: 'center', padding: '8px 0' }}>No custom emojis yet — create one!</p>
+                        : (
+                            <div style={S.emojiGrid}>
+                                {customEmojis.map(emoji => (
+                                    <button key={emoji.id} onClick={() => insertEmoji(`:${emoji.name}:`)}
+                                        title={`:${emoji.name}:`}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', borderRadius: 6, padding: 2 }}>
+                                        <img src={emoji.image_url} alt={emoji.name}
+                                            style={{ width: 30, height: 30, borderRadius: 4, objectFit: 'cover' }} />
+                                    </button>
+                                ))}
+                            </div>
+                        )
+                    }
                 </div>
             )}
 
-            {/* ── Standard emoji picker ──────────────────── */}
+            {/* Standard emoji picker */}
             {showEmojiPicker && (
-                <div className="mb-3 bg-white rounded-xl p-3 border border-slate-200 shadow-sm">
-                    <div className="grid grid-cols-8 gap-1">
+                <div style={S.panel}>
+                    <div style={S.emojiGrid}>
                         {STANDARD_EMOJIS.map(emoji => (
-                            <button
-                                key={emoji}
-                                onClick={() => insertEmoji(emoji)}
-                                className="text-xl hover:scale-125 transition-transform p-1 rounded hover:bg-slate-100"
-                            >
+                            <button key={emoji} onClick={() => insertEmoji(emoji)}
+                                style={S.emojiBtn}
+                                onMouseEnter={e => e.currentTarget.style.background = C.purpleTint}
+                                onMouseLeave={e => e.currentTarget.style.background = 'none'}>
                                 {emoji}
                             </button>
                         ))}
@@ -359,118 +383,62 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                 </div>
             )}
 
-            {/* ── Input row ──────────────────────────────── */}
-            <div style={{
-                display: 'flex',
-                flexDirection: selectedImagePreview ? 'column' : 'row',
-                gap: 8,
-                background: '#F3F0FF',
-                borderRadius: 24,
-                padding: '8px 14px',
-                alignItems: selectedImagePreview ? 'stretch' : 'flex-end',
-            }}>
-                
-                {selectedImagePreview && (
-                    <div className="flex gap-2 items-start">
-                        <img
-                            src={selectedImagePreview}
-                            alt="Preview"
-                            className="w-16 h-16 rounded-lg object-cover"
-                        />
-                        <button
-                            onClick={removeSelectedImage}
-                            className="text-slate-400 hover:text-red-500 text-sm p-1"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                )}
+            {/* Main input bar */}
+            <div style={S.inputBar}>
 
-                <div className="flex items-end gap-2">
-                    {/* ── Action buttons ─────────────────────── */}
-                    <div className="flex flex-shrink-0 gap-1">
-
-                        {/* Standard emoji */}
-                        <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowCustomEmojis(false); }}
-                            title="Emoji" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '2px 4px', color: '#8B80C8' }}>
-                            😊
-                        </button>
-
-                        {/* Custom emoji */}
-                        <button onClick={() => { setShowCustomEmojis(!showCustomEmojis); setShowEmojiPicker(false); loadCustomEmojis(); }}
-                            title="Custom Emoji" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '2px 4px', color: '#8B80C8' }}>
-                            🎨
-                        </button>
-
-                        {/* Upload image */}
-                        <button onClick={() => imageInputRef.current?.click()} title="Upload Image"
-                            disabled={uploading || selectedImage !== null}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '2px 4px', color: '#8B80C8', opacity: uploading || selectedImage ? 0.4 : 1 }}>
-                            🖼️
-                        </button>
-
-                        {/* Upload file */}
-                        <button onClick={() => fileInputRef.current?.click()} title="Upload File"
-                            disabled={uploading}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '2px 4px', color: '#8B80C8', opacity: uploading ? 0.4 : 1 }}>
-                            📎
-                        </button>
-
-                        {/* Create custom emoji */}
-                        <button onClick={() => { setShowCreateEmoji(!showCreateEmoji); setShowCustomEmojis(false); setShowEmojiPicker(false); }}
-                            title="Create Custom Emoji" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '2px 4px', color: '#8B80C8' }}>
-                            ✨
-                        </button>
-
-                    </div>
-
-                    {/* ── Text input ─────────────────────────── */}
-                    <div className="flex-1 relative">
-                        <textarea
-                            ref={textareaRef}
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder={selectedImage ? "Add a message..." : "Type a message..."}
-                            rows={1}
-                            style={{ minHeight: 38, background: 'transparent', color: '#2E2270', border: 'none', outline: 'none', resize: 'none', width: '100%', fontSize: 13, fontFamily: 'inherit', padding: '8px 4px' }}
-                            className="max-h-32 overflow-y-auto placeholder:text-[#A89ED4]"
-                            onInput={(e) => {
-                                e.target.style.height = 'auto';
-                                e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
-                            }}
-                        />
-                    </div>
-
-                    {/* ── Send button ────────────────────────── */}
-                    <button
-                        onClick={handleSend}
-                        disabled={(!message.trim() && !selectedImage) || uploading}
-                        style={{ width: 30, height: 30, borderRadius: '50%', background: (!message.trim() && !selectedImage) || uploading ? '#CECBF6' : '#4B3FA0', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14">
-                            <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-                        </svg>
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                    <button title="Emoji" style={S.actionBtn}
+                        onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowCustomEmojis(false); }}>
+                        😊
                     </button>
-
+                    <button title="Custom emoji" style={S.actionBtn}
+                        onClick={() => { setShowCustomEmojis(!showCustomEmojis); setShowEmojiPicker(false); loadCustomEmojis(); }}>
+                        🎨
+                    </button>
+                    <button title="Upload image" style={{ ...S.actionBtn, opacity: (uploading || selectedImage) ? 0.35 : 1 }}
+                        disabled={uploading || !!selectedImage}
+                        onClick={() => imageInputRef.current?.click()}>
+                        🖼️
+                    </button>
+                    <button title="Upload file" style={{ ...S.actionBtn, opacity: uploading ? 0.35 : 1 }}
+                        disabled={uploading}
+                        onClick={() => fileInputRef.current?.click()}>
+                        📎
+                    </button>
+                    <button title="Create custom emoji" style={S.actionBtn}
+                        onClick={() => { setShowCreateEmoji(!showCreateEmoji); setShowCustomEmojis(false); setShowEmojiPicker(false); }}>
+                        ✨
+                    </button>
                 </div>
+
+                {/* Textarea */}
+                <textarea
+                    ref={textareaRef}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={selectedImage ? 'Add a message…' : 'Type a message…'}
+                    rows={1}
+                    style={S.textarea}
+                    className="placeholder:text-[#A89ED4]"
+                    onInput={(e) => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
+                    }}
+                />
+
+                {/* Send button */}
+                <button onClick={handleSend} disabled={!canSend} style={S.sendBtn(canSend)}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14">
+                        <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                    </svg>
+                </button>
             </div>
 
             {/* Hidden file inputs */}
-            <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageSelect}
-            />
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.zip,.doc,.docx,.txt,.xlsx"
-                className="hidden"
-                onChange={handleFileUpload}
-            />
+            <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
+            <input ref={fileInputRef} type="file" accept=".pdf,.zip,.doc,.docx,.txt,.xlsx" style={{ display: 'none' }} onChange={handleFileUpload} />
 
         </div>
     );

@@ -162,15 +162,14 @@ export default function ChatMessage({
               {message.message && (
                 <div style={{
                   background: isOwn ? '#4B3FA0' : '#FFFFFF',
-                  color: isOwn ? '#EEEEFF' : '#2E2270',
+                  color: isOwn ? '#FFFFFF' : '#2E2270',
                   border: isOwn ? 'none' : '0.5px solid #E4DEFF',
-                  borderRadius: 16,
-                  borderBottomRightRadius: isOwn ? 4 : 16,
-                  borderBottomLeftRadius: isOwn ? 16 : 4,
+                  borderRadius: isOwn ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                   padding: '8px 14px',
+                  maxWidth: '65%',
                   marginBottom: message.file_url && isImage(message.file_type) ? 6 : 0,
                 }}>
-                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                     <EmojiText text={message.message} />
                   </p>
                 </div>
@@ -199,11 +198,9 @@ export default function ChatMessage({
               {message.file_url && !isImage(message.file_type) && (
                 <div style={{
                   background: isOwn ? '#4B3FA0' : '#FFFFFF',
-                  color: isOwn ? '#EEEEFF' : '#2E2270',
+                  color: isOwn ? '#FFFFFF' : '#2E2270',
                   border: isOwn ? 'none' : '0.5px solid #E4DEFF',
-                  borderRadius: 16,
-                  borderBottomRightRadius: isOwn ? 4 : 16,
-                  borderBottomLeftRadius: isOwn ? 16 : 4,
+                  borderRadius: isOwn ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                   padding: '8px 14px',
                 }}>
                   <a href={message.file_url} target="_blank" rel="noreferrer"
@@ -212,8 +209,8 @@ export default function ChatMessage({
                       {message.file_type === 'pdf' ? '📄' : message.file_type === 'zip' ? '🗜️' : message.file_type === 'doc' || message.file_type === 'docx' ? '📝' : '📎'}
                     </span>
                     <div>
-                      <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: isOwn ? '#EEEEFF' : '#2E2270', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{message.file_name}</p>
-                      <p style={{ margin: 0, fontSize: 11, color: isOwn ? 'rgba(238,238,255,0.65)' : '#8B80C8' }}>{formatSize(message.file_size)}</p>
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: isOwn ? '#FFFFFF' : '#2E2270', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{message.file_name}</p>
+                      <p style={{ margin: 0, fontSize: 11, color: isOwn ? 'rgba(255,255,255,0.65)' : '#8B80C8' }}>{formatSize(message.file_size)}</p>
                     </div>
                   </a>
                 </div>
