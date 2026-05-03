@@ -2,16 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Box model ─────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
+  max-width: 100%;
 }
 
+/* ── Root — no scroll at all ───────────────────────────────── */
 html, body, #root {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100vh;
+  height: 100%;
+  overflow: hidden;
   background: #FAF9FF;
   font-family: 'Inter', 'Segoe UI', sans-serif;
   color: #2E2270;
 }
+
+/* ── App root container ────────────────────────────────────── */
+.app-root,
+.app-container {
+  overflow: hidden !important;
+  height: 100vh;
+  width: 100%;
+}
+
+/* ── Sidebar — no scroll ───────────────────────────────────── */
+.sidebar-left {
+  overflow: hidden !important;
+}
+
+/* ── Conversation list — vertical only ─────────────────────── */
+.conversation-list {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+/* ── Chat panel — no scroll on panel itself ────────────────── */
+.chat-panel {
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* ── Messages area — ONLY this scrolls ─────────────────────── */
+.messages-area {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  flex: 1;
+}
+
+.messages-area::-webkit-scrollbar        { width: 4px; }
+.messages-area::-webkit-scrollbar-track  { background: transparent; }
+.messages-area::-webkit-scrollbar-thumb  { background: #CECBF6; border-radius: 4px; }
+.messages-area::-webkit-scrollbar-thumb:hover { background: #8B80C8; }
+
+/* ── Input area — no scroll ────────────────────────────────── */
+.input-area,
+.chat-input-area {
+  overflow: hidden !important;
+  flex-shrink: 0;
+}
+
+/* ── Right detail panel — vertical only ────────────────────── */
+.detail-panel {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+.detail-panel::-webkit-scrollbar        { width: 3px; }
+.detail-panel::-webkit-scrollbar-track  { background: transparent; }
+.detail-panel::-webkit-scrollbar-thumb  { background: #E4DEFF; border-radius: 4px; }
+
+/* ── Thin scrollbar for conversation list ───────────────────── */
+.conversation-list::-webkit-scrollbar        { width: 3px; }
+.conversation-list::-webkit-scrollbar-track  { background: transparent; }
+.conversation-list::-webkit-scrollbar-thumb  { background: #E4DEFF; border-radius: 4px; }

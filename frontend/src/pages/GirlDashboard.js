@@ -108,7 +108,7 @@ export default function GirlDashboard() {
                     <p style={{ fontSize: 16, fontWeight: 500, color: C.textPrimary, margin: '0 0 12px' }}>Messages</p>
                     <SearchBox value={search} onChange={setSearch} placeholder="Search…" />
                 </div>
-                <div style={{ flex: 1, overflowY: 'auto', padding: '4px 8px' }}>
+                <div className="conversation-list" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '4px 8px' }}>
                     {rooms.map(room => (
                         <ConvItem
                             key={room.id}
@@ -321,7 +321,7 @@ function EmptyPanel({ title, body, actionLabel, onAction }) {
 // ── Right detail panel ─────────────────────────────────────────
 function DetailsPanel({ user, title, subtitle, info }) {
     return (
-        <div style={{ width: 200, flexShrink: 0, borderLeft: `0.5px solid ${C.border}`, background: C.panelBg, overflowY: 'auto' }}>
+        <div className="detail-panel" style={{ width: 200, flexShrink: 0, borderLeft: `0.5px solid ${C.border}`, background: C.panelBg, overflowX: 'hidden', overflowY: 'auto' }}>
             {/* Avatar + name */}
             <div style={{ textAlign: 'center', padding: '0 16px' }}>
                 <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#EEEDFE', color: '#4B3FA0', fontSize: 22, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '20px auto 10px', border: '2px solid #CECBF6' }}>

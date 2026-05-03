@@ -202,7 +202,7 @@ export default function ChatBox({
             )}
 
             {/* ── Messages area — only this scrolls ─────────── */}
-            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '20px 18px' }}>
+            <div className="messages-area" style={{ overflowX: 'hidden', overflowY: 'auto', flex: 1, padding: '20px 18px' }}>
                 <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
                     {/* Chat header */}

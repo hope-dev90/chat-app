@@ -26,6 +26,8 @@ const S = {
         background: C.white,
         padding: '10px 14px 14px',
         borderTop: `0.5px solid ${C.border}`,
+        overflow: 'hidden',
+        flexShrink: 0,
     },
     // Status bar (uploading / error)
     uploading: {
