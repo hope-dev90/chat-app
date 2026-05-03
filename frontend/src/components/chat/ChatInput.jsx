@@ -118,6 +118,7 @@ const S = {
         display: 'flex', alignItems: 'flex-end', gap: 8,
         background: C.purpleTint, borderRadius: 24,
         padding: '6px 10px 6px 14px',
+        minWidth: 0,
     },
     actionBtn: {
         background: 'none', border: 'none', cursor: 'pointer',
@@ -127,7 +128,10 @@ const S = {
         lineHeight: 1,
     },
     textarea: {
-        flex: 1, background: 'transparent',
+        flex: 1,
+        minWidth: 0,
+        width: '100%',
+        background: 'transparent',
         color: C.textPrimary, border: 'none', outline: 'none',
         resize: 'none', fontSize: 13, fontFamily: 'inherit',
         padding: '6px 4px', minHeight: 34, lineHeight: 1.5,

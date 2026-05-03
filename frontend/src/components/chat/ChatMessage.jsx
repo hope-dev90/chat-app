@@ -137,9 +137,13 @@ export default function ChatMessage({
 
       {/* ── Message content ────────────────────────── */}
       <div
-        className={`flex flex-col max-w-[85%] sm:max-w-md lg:max-w-lg xl:max-w-xl ${
-          isOwn ? "items-end" : "items-start"
-        }`}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: isOwn ? 'flex-end' : 'flex-start',
+          maxWidth: '65%',
+          minWidth: 0,
+        }}
       >
         {/* Sender name + time */}
         {showAvatar && (
@@ -161,15 +165,16 @@ export default function ChatMessage({
               {/* Text message */}
               {message.message && (
                 <div style={{
+                  display: 'block',
                   background: isOwn ? '#4B3FA0' : '#FFFFFF',
                   color: isOwn ? '#FFFFFF' : '#2E2270',
                   border: isOwn ? 'none' : '0.5px solid #E4DEFF',
                   borderRadius: isOwn ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                   padding: '8px 14px',
-                  maxWidth: '65%',
+                  minWidth: 48,
                   marginBottom: message.file_url && isImage(message.file_type) ? 6 : 0,
                 }}>
-                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'break-word', writingMode: 'horizontal-tb', letterSpacing: 'normal' }}>
                     <EmojiText text={message.message} />
                   </p>
                 </div>
