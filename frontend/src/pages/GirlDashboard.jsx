@@ -92,8 +92,8 @@ export default function GirlDashboard() {
     const [search, setSearch] = useState('');
 
     const conversations = [
-        { id: 1, name: 'General Community', preview: 'Start chatting...' },
-        { id: 2, name: 'Girls Only', preview: 'Safe space 💜' },
+        { id: 1, name: 'General Community', preview: 'Start chatting...', roomType: 'general', otherUserId: null },
+        { id: 2, name: 'Girls Only', preview: 'Safe space 💜', roomType: 'girls', otherUserId: null },
     ];
 
     return (
@@ -195,7 +195,12 @@ export default function GirlDashboard() {
                         Select a conversation
                     </div>
                 ) : (
-                    <ChatBox key={activeChat.id} />
+                    <ChatBox
+                        key={activeChat.id}
+                        roomType={activeChat.roomType}
+                        otherUserId={activeChat.otherUserId}
+                        chatName={activeChat.name}
+                    />
                 )}
             </div>
         </div>

@@ -28,7 +28,7 @@ export default function Login() {
             const res = await api.post('/auth/login', formData);
             const { token, user } = res.data;
 
-            // Save to context and localStorage
+            
             login(user, token);
 
             // Redirect based on role
