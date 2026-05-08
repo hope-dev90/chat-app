@@ -25,6 +25,7 @@ import {
 const getRoom = (roomType, userId, otherUserId) => {
     if (roomType === 'general') return 'general';
     if (roomType === 'girls') return 'girls';
+    if (roomType === 'circle') return `circle_${otherUserId}`; // otherUserId = circleId
     if (roomType === 'mentor' || roomType === 'dm') {
         const sorted = [userId, otherUserId].sort();
         return `${roomType}_${sorted[0]}_${sorted[1]}`;
@@ -39,6 +40,7 @@ const canAccessRoom = async (socket, roomType, otherUserId) => {
     if (roomType === 'general') return true;
     if (roomType === 'girls') return role === 'girl';
     if (roomType === 'dm') return true;
+    if (roomType === 'circle') return true; // membership checked at join time
 
     if (roomType === 'mentor') {
         if (role === 'girl') return await isApprovedPair(userId, otherUserId);

@@ -1,23 +1,13 @@
 import express from 'express';
-import {
-    createCircleController,
-    getAllCirclesController,
-    getCircleByIdController,
-    joinCircleController,
-    leaveCircleController,
-    getCircleMembersController,
-    getUserCirclesController
-} from '../controllers/circleController.js';
-import { authMiddleware } from '../middleware/authMiddleware.js';
+import { create, list, myCircles, join, leave } from '../controllers/circleController.js';
+import { authMiddleware, mentorOnly } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/', authMiddleware, createCircleController);
-router.get('/', authMiddleware, getAllCirclesController);
-router.get('/my', authMiddleware, getUserCirclesController);
-router.get('/:circleId', authMiddleware, getCircleByIdController);
-router.post('/:circleId/join', authMiddleware, joinCircleController);
-router.post('/:circleId/leave', authMiddleware, leaveCircleController);
-router.get('/:circleId/members', authMiddleware, getCircleMembersController);
+router.get('/',           authMiddleware, list);          // all circles (girls + mentors)
+router.post('/',          authMiddleware, mentorOnly, create);  // mentor creates
+router.get('/mine',       authMiddleware, mentorOnly, myCircles); // mentor's own circles
+router.post('/:id/join',  authMiddleware, join);          // anyone joins
+router.post('/:id/leave', authMiddleware, leave);         // anyone leaves
 
 export default router;

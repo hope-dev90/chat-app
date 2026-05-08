@@ -58,6 +58,7 @@ function Avatar({ initials = "?", size = 40, bg = C.blueLight, color = C.blue, o
 function Sidebar({ activeNav, setActiveNav, user, logout }) {
   const navItems = [
     { key: "dashboard", label: "Dashboard", icon: icons.dashboard },
+    { key: "circles",   label: "Circles",   icon: icons.opportunities },
     { key: "mentors",   label: "Mentors",   icon: icons.mentees },
     { key: "chat",      label: "Chat",      icon: icons.chat },
     { key: "schedule",  label: "Schedule",  icon: icons.schedule },
@@ -216,9 +217,93 @@ function DashboardHome({ user, mentors, myMentor, onlineUsers, onChatMentor, onR
   );
 }
 
-// ── Settings tab ───────────────────────────────────────────────
-function SettingsTab({ user, logout }) {
+// ── Circles tab (girl view) ────────────────────────────────────
+function CirclesTab({ user }) {
+  const [circles, setCircles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState('');
+  const [activeCircle, setActiveCircle] = useState(null);
+
+  const load = () => api.get('/circles').then(r => setCircles(r.data.circles || [])).catch(() => {}).finally(() => setLoading(false));
+  useEffect(() => { load(); }, []);
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const handleJoin = async (circle) => {
+    try {
+      await api.post(`/circles/${circle.id}/join`);
+      showToast(`Joined "${circle.name}"!`);
+      load();
+    } catch (e) { showToast(e.response?.data?.message || 'Error'); }
+  };
+
+  const handleLeave = async (circle) => {
+    try {
+      await api.post(`/circles/${circle.id}/leave`);
+      showToast(`Left "${circle.name}"`);
+      load();
+    } catch (e) { showToast(e.response?.data?.message || 'Error'); }
+  };
+
+  if (activeCircle) {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ padding: '12px 20px', borderBottom: `1px solid ${C.gray200}`, background: C.white, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => setActiveCircle(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.gray500, fontSize: 13, fontFamily: 'inherit' }}>← Back</button>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: activeCircle.color || C.blue }} />
+          <span style={{ fontWeight: 600, color: C.gray900 }}>{activeCircle.name}</span>
+          <span style={{ fontSize: 12, color: C.gray400 }}>{activeCircle.member_count} members</span>
+        </div>
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <ChatBox roomType="circle" otherUserId={activeCircle.id} key={`circle-${activeCircle.id}`} chatName={activeCircle.name} />
+        </div>
+      </div>
+    );
+  }
+
   return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', background: C.gray50 }}>
+      {toast && <div style={{ position: 'fixed', top: 70, left: '50%', transform: 'translateX(-50%)', background: C.blue, color: C.white, padding: '10px 24px', borderRadius: 8, fontSize: 13, fontWeight: 600, zIndex: 9999 }}>{toast}</div>}
+      <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700, color: C.gray900 }}>Featured Circles</h2>
+      <p style={{ margin: '0 0 24px', fontSize: 13, color: C.gray500 }}>Join spaces that align with your journey</p>
+      {loading && <p style={{ color: C.gray400 }}>Loading circles…</p>}
+      {!loading && circles.length === 0 && (
+        <div style={{ textAlign: 'center', marginTop: 60, color: C.gray400 }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🔵</div>
+          <div>No circles yet. Ask your mentor to create one!</div>
+        </div>
+      )}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: 16 }}>
+        {circles.map(c => (
+          <div key={c.id} style={{ background: c.color || C.blue, borderRadius: 12, padding: 20, color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}>
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>{c.name}</div>
+            <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 4, lineHeight: 1.5 }}>{c.description || 'No description'}</div>
+            <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 16 }}>by {c.creator_name} · {c.member_count} members</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {c.is_member ? (
+                <>
+                  <button onClick={() => setActiveCircle(c)} style={{ flex: 1, padding: '8px', borderRadius: 8, background: 'rgba(255,255,255,0.25)', color: '#fff', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    💬 Open Chat
+                  </button>
+                  <button onClick={() => handleLeave(c)} style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(0,0,0,0.2)', color: '#fff', border: 'none', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Leave
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => handleJoin(c)} style={{ flex: 1, padding: '8px', borderRadius: 8, background: 'rgba(255,255,255,0.9)', color: c.color || C.blue, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Join Circle
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Settings tab ───────────────────────────────────────────────
+function SettingsTab({ user, logout }) {  return (
     <div style={{ flex: 1, padding: "32px", background: C.gray50 }}>
       <h2 style={{ margin: "0 0 24px", color: C.gray900 }}>Settings</h2>
       <div style={{ background: C.white, borderRadius: 12, border: `1px solid ${C.gray200}`, padding: "20px 24px", maxWidth: 400 }}>
@@ -331,6 +416,9 @@ export default function GirlDashboard() {
             </div>
           </>
         )}
+
+        {/* Circles */}
+        {nav === "circles" && <CirclesTab user={user} />}
 
         {/* Dashboard home */}
         {nav === "dashboard" && (

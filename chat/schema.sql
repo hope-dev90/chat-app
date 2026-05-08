@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS messages (
     id BIGSERIAL PRIMARY KEY,
     sender_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     room VARCHAR(255) NOT NULL,
-    room_type VARCHAR(20) NOT NULL CHECK (room_type IN ('general', 'girls', 'mentor', 'dm')),
+    room_type VARCHAR(20) NOT NULL CHECK (room_type IN ('general', 'girls', 'mentor', 'dm', 'circle')),
     message TEXT NOT NULL DEFAULT '',
     file_url TEXT,
     file_name TEXT,
