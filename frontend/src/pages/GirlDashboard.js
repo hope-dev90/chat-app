@@ -165,12 +165,6 @@ const SyncBadge = ({ status }) => {
   return <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", background: s.bg, color: s.color, padding: "2px 8px", borderRadius: 20 }}>{s.label}</span>;
 };
 
-const STATIC_POSTS = [
-  { id: 1, author: "Grace Mukamena", initials: "GM", avatarColor: "#F59E0B", timestamp: "2 hours ago", hashtag: "#Scholarships", syncStatus: "offline", title: "New STEM Scholarship cycle for 2024 is now open!", body: "I just received confirmation that the ministerial tech grants are accepting applications. Make sure to download the offline PDF packet...", likes: 124, comments: 42 },
-  { id: 2, author: "Aline Gasana",   initials: "AG", avatarColor: "#10B981", timestamp: "5 hours ago", hashtag: "#TechLife",      syncStatus: "pending", title: "Best practices for using IoT in local irrigation?",    body: "Has anyone successfully deployed solar-powered sensors in the Northern Province? Looking for advice on hardware that handles high...",  likes: 89,  comments: 18 },
-  { id: 3, author: "Divine Keza",    initials: "DK", avatarColor: "#6366F1", timestamp: "Yesterday",   hashtag: "#AgriTech",     syncStatus: "synced",  title: "Documenting our progress in Musanze!",                 body: "Our latest harvest was 20% more efficient thanks to the water tracking module we discussed last month. Here's a photo from this morning's...", likes: 256, comments: 56, hasImage: true },
-];
-
 const TRENDING = [
   { tag: "#TechGrants2024",  category: "Trending in Scholarships & Funding", metric: "468 discussions today" },
   { tag: "#STEMLife",        category: "Trending in Career Growth",           metric: "1.2k active participants" },
@@ -178,17 +172,59 @@ const TRENDING = [
   { tag: "#GirlsWhoCodeRW", category: "Community Spotlight",                 metric: "Featured circle active now" },
 ];
 
+const AVATAR_COLORS = ["#F59E0B","#10B981","#6366F1","#EC4899","#8B5CF6","#2563EB"];
+
+function timeAgo(date) {
+  const diff = Date.now() - new Date(date).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 function DashboardHome({ user, mentors, myMentor, onlineUsers, onChatMentor, onRequest, requests, onGoCircles }) {
   const [circles, setCircles] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
   const [activeCircle, setActiveCircle] = useState(null);
+  const [showNewPost, setShowNewPost] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newBody, setNewBody] = useState('');
+  const [posting, setPosting] = useState(false);
+
+  const loadPosts = () => {
+    api.get('/posts')
+      .then(r => setPosts(r.data.posts || []))
+      .catch(() => {})
+      .finally(() => setPostsLoading(false));
+  };
 
   useEffect(() => {
     api.get('/circles').then(r => setCircles(r.data.circles || [])).catch(() => {});
+    loadPosts();
   }, []);
 
   const handleJoin = async (circle) => {
-    try { await api.post(`/circles/${circle.id}/join`); setCircles(prev => prev.map(c => c.id === circle.id ? { ...c, is_member: true, member_count: Number(c.member_count) + 1 } : c)); }
+    try {
+      await api.post(`/circles/${circle.id}/join`);
+      setCircles(prev => prev.map(c => c.id === circle.id ? { ...c, is_member: true, member_count: Number(c.member_count) + 1 } : c));
+    } catch (e) { console.error(e); }
+  };
+
+  const handleLike = async (postId) => {
+    try { await api.post(`/posts/${postId}/like`); loadPosts(); }
     catch (e) { console.error(e); }
+  };
+
+  const submitPost = async () => {
+    if (!newTitle.trim() || !newBody.trim()) return;
+    setPosting(true);
+    try {
+      await api.post('/posts', { title: newTitle.trim(), content: newBody.trim(), status: 'synced' });
+      setNewTitle(''); setNewBody(''); setShowNewPost(false);
+      loadPosts();
+    } catch (e) { console.error(e); } finally { setPosting(false); }
   };
 
   if (activeCircle) {
@@ -243,29 +279,58 @@ function DashboardHome({ user, mentors, myMentor, onlineUsers, onChatMentor, onR
         </div>
 
         {/* Recent Discussions */}
-        <div style={{ fontWeight: 700, fontSize: 15, color: C.gray900, marginBottom: 12 }}>Recent Discussions</div>
-        {STATIC_POSTS.map(post => (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: C.gray900 }}>Recent Discussions</div>
+          <button onClick={() => setShowNewPost(v => !v)} style={{ padding: "6px 14px", borderRadius: 8, background: C.blue, color: C.white, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>+ New Post</button>
+        </div>
+
+        {/* New post form */}
+        {showNewPost && (
+          <div style={{ background: C.white, borderRadius: 10, padding: 16, border: `1px solid ${C.gray200}`, marginBottom: 14 }}>
+            <input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Post title..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${C.gray200}`, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box", fontFamily: "inherit" }} />
+            <textarea value={newBody} onChange={e => setNewBody(e.target.value)} placeholder="What's on your mind?" rows={3} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${C.gray200}`, fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button onClick={submitPost} disabled={posting || !newTitle.trim() || !newBody.trim()} style={{ padding: "8px 20px", borderRadius: 8, background: C.blue, color: C.white, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", opacity: (!newTitle.trim() || !newBody.trim()) ? 0.5 : 1 }}>
+                {posting ? "Posting…" : "Post"}
+              </button>
+              <button onClick={() => setShowNewPost(false)} style={{ padding: "8px 16px", borderRadius: 8, background: C.gray100, color: C.gray700, border: "none", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {postsLoading && <p style={{ color: C.gray400, fontSize: 13 }}>Loading discussions…</p>}
+        {!postsLoading && posts.length === 0 && (
+          <div style={{ textAlign: "center", padding: "40px 0", color: C.gray400 }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
+            <div>No discussions yet. Be the first to post!</div>
+          </div>
+        )}
+        {posts.map((post, i) => (
           <div key={post.id} style={{ background: C.white, borderRadius: 10, padding: "16px", border: `1px solid #F1F5F9`, marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: post.avatarColor, color: "#fff", fontWeight: 700, fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{post.initials}</div>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: AVATAR_COLORS[i % AVATAR_COLORS.length], color: "#fff", fontWeight: 700, fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {post.user_name?.slice(0, 2).toUpperCase()}
+                </div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: C.gray900 }}>{post.author}</div>
-                  <div style={{ fontSize: 10, color: C.gray400 }}>{post.timestamp} · <span style={{ color: C.blue }}>{post.hashtag}</span></div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.gray900 }}>{post.user_name}</div>
+                  <div style={{ fontSize: 10, color: C.gray400 }}>
+                    {timeAgo(post.created_at)}
+                    {post.hashtags?.filter(Boolean).length > 0 && (
+                      <span style={{ color: C.blue }}> · {post.hashtags.filter(Boolean).map(h => `#${h}`).join(' ')}</span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <SyncBadge status={post.syncStatus} />
+              <SyncBadge status={post.status || 'synced'} />
             </div>
-            {post.hasImage && (
-              <div style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%)", borderRadius: 8, padding: "16px", marginBottom: 10, color: "#fff", fontSize: 18, fontWeight: 800 }}>
-                Your future,<br />offline-first.
-              </div>
-            )}
             <div style={{ fontWeight: 700, fontSize: 13, color: C.gray900, marginBottom: 5 }}>{post.title}</div>
-            <div style={{ fontSize: 12, color: C.gray500, lineHeight: 1.5, marginBottom: 12 }}>{post.body}</div>
+            <div style={{ fontSize: 12, color: C.gray500, lineHeight: 1.5, marginBottom: 12 }}>{post.content}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <span style={{ fontSize: 12, color: C.gray500 }}>👍 {post.likes}</span>
-              <span style={{ fontSize: 12, color: C.gray500 }}>💬 {post.comments}</span>
+              <button onClick={() => handleLike(post.id)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.gray500, fontFamily: "inherit", padding: 0 }}>
+                👍 {post.like_count || 0}
+              </button>
+              <span style={{ fontSize: 12, color: C.gray500 }}>💬 {post.comment_count || 0}</span>
               <span style={{ fontSize: 12, color: C.blue, cursor: "pointer" }}>↗ Share</span>
             </div>
           </div>
