@@ -1,13 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { AuthContext, AuthProvider } from './context/authContext';
-import { SocketProvider } from './context/socketContext';
+import { SocketProvider, SocketContext } from './context/socketContext';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import GirlDashboard from './pages/GirlDashboard';
 import MentorDashboard from './pages/MentorDashboard';
 import VerifyEmail from './pages/VerifyEmail';
+import IncomingCallModal from './components/chat/IncomingCallModal';
+import VideoCall from './components/chat/VideoCall';
 import CommunityHub from './pages/CommunityHub';
 import DirectMessages from './pages/DirectMessages';
 import Circles from './pages/Circles';
@@ -89,8 +91,41 @@ export default function App() {
             <AuthProvider>
                 <SocketProvider>
                     <AppRoutes />
+                    <GlobalCallHandler />
                 </SocketProvider>
             </AuthProvider>
         </BrowserRouter>
+    );
+}
+
+// Handles incoming calls globally — shown on top of any page
+function GlobalCallHandler() {
+    const { socket, incomingCall, setIncomingCall } = useContext(SocketContext);
+    const [activeCall, setActiveCall] = useState(null);
+
+    const accept = () => {
+        setActiveCall({ roomUrl: incomingCall.roomUrl, callType: incomingCall.callType });
+        setIncomingCall(null);
+    };
+
+    const decline = () => {
+        if (socket) socket.emit('call-declined', { toUserId: incomingCall.fromId });
+        setIncomingCall(null);
+    };
+
+    const endCall = () => {
+        if (socket) socket.emit('call-ended', {});
+        setActiveCall(null);
+    };
+
+    return (
+        <>
+            {incomingCall && !activeCall && (
+                <IncomingCallModal call={incomingCall} onAccept={accept} onDecline={decline} />
+            )}
+            {activeCall && (
+                <VideoCall roomUrl={activeCall.roomUrl} audioOnly={activeCall.callType === 'audio'} onLeave={endCall} />
+            )}
+        </>
     );
 }

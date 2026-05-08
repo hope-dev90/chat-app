@@ -57,6 +57,9 @@ export default function chatSocket(io) {
     io.on('connection', async (socket) => {
         console.log(`✅ connected: ${socket.user.name} (${socket.user.role})`);
 
+        // Join a personal room so we can receive targeted events (calls, DMs)
+        socket.join(`user_${socket.user.id}`);
+
         // Update online status
         await updateOnlineStatus(socket.user.id, true);
         io.emit('userOnline', {
@@ -299,6 +302,21 @@ export default function chatSocket(io) {
         socket.on('leaveRoom', ({ room }) => {
             socket.leave(room);
             console.log(`${socket.user.name} left room: ${room}`);
+        });
+
+        // ─── Call Signaling ────────────────────────────────────
+        socket.on('call-invite', ({ toUserId, from, fromId, roomUrl, callType }) => {
+            // Forward the invite to the target user's socket
+            io.to(`user_${toUserId}`).emit('call-invite', { from, fromId, roomUrl, callType });
+        });
+
+        socket.on('call-declined', ({ toUserId }) => {
+            io.to(`user_${toUserId}`).emit('call-declined');
+        });
+
+        socket.on('call-ended', () => {
+            // Broadcast to all sockets of this user's contacts — simplest approach
+            socket.broadcast.emit('call-ended');
         });
 
         // ─── Disconnect ────────────────────────────────────────

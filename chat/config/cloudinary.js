@@ -80,6 +80,32 @@ const fileStorage = new CloudinaryStorage({
     }
 });
 
+// Audio storage for voice notes
+const audioStorage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'chat_app/audio',
+        allowed_formats: ['webm', 'mp3', 'ogg', 'wav', 'm4a'],
+        resource_type: 'video' // Cloudinary uses 'video' resource type for audio
+    }
+});
+
+export const uploadAudio = multer({
+    storage: useCloudinary ? audioStorage : localStorage('audio'),
+    // Accept any audio MIME type — don't filter by extension since blobs may vary
+    fileFilter: (req, file, cb) => {
+        const ext = path.extname(file.originalname).slice(1).toLowerCase();
+        const mime = file.mimetype?.toLowerCase() || '';
+        const allowed = ['webm', 'mp3', 'ogg', 'wav', 'm4a', 'opus'];
+        if (allowed.includes(ext) || mime.startsWith('audio/') || mime.includes('webm')) {
+            cb(null, true);
+        } else {
+            cb(new Error(`Only audio files are allowed (got ${ext || mime})`));
+        }
+    },
+    limits: { fileSize: 20 * 1024 * 1024 }
+});
+
 export const uploadEmoji = multer({
     storage: useCloudinary ? emojiStorage : localStorage('emojis'),
     fileFilter: fileFilter(['jpg', 'jpeg', 'png', 'gif', 'webp']),

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useContext } from "react";
 import { AuthContext } from "../../context/authContext";
 import api from "../../api/axios";
 import EmojiText from "./EmojiText";
+import VoiceNotePlayer from "./VoiceNotePlayer";
 
 // Standard emojis
 const STANDARD_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥", "👏", "🎉"];
@@ -180,7 +181,14 @@ export default function ChatMessage({
                 </div>
               )}
 
-              {/* Image - Instagram-style clean display */}
+              {/* Voice note */}
+              {message.file_url && message.file_type === 'audio' && (
+                <div style={{ marginBottom: message.message ? 6 : 0 }}>
+                  <VoiceNotePlayer src={message.file_url} isOwn={isOwn} />
+                </div>
+              )}
+
+              {/* Image */}
               {message.file_url && isImage(message.file_type) && (
                 <div>
                   <img

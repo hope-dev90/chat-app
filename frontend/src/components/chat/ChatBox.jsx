@@ -3,6 +3,9 @@ import { SocketContext } from '../../context/socketContext';
 import { AuthContext } from '../../context/authContext';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
+import VoiceNotePlayer from './VoiceNotePlayer';
+import VideoCall from './VideoCall';
+import useCallSignaling from '../../hooks/useCallSignaling';
 
 export default function ChatBox({
     roomType,
@@ -12,6 +15,9 @@ export default function ChatBox({
 }) {
     const { socket, connected } = useContext(SocketContext);
     const { user } = useContext(AuthContext);
+
+    // ── Call signaling ─────────────────────────────────────────
+    const { activeCall, startCall, endCall } = useCallSignaling({ socket, currentUser: user });
 
     const [messages, setMessages] = useState([]);
     const [typing, setTyping] = useState(null);
@@ -195,12 +201,36 @@ export default function ChatBox({
                 </div>
             ) : (<>
 
+            {/* ── Active call overlay ────────────────────────── */}
+            {activeCall && (
+                <VideoCall
+                    roomUrl={activeCall.roomUrl}
+                    audioOnly={activeCall.callType === 'audio'}
+                    onLeave={endCall}
+                />
+            )}
+
             {/* ── Back button ───────────────────────────────── */}
             {onBack && (
-                <div style={{ flexShrink: 0, padding: '10px 18px', borderBottom: '0.5px solid #E4DEFF', background: '#FFFFFF' }}>
+                <div style={{ flexShrink: 0, padding: '10px 18px', borderBottom: '0.5px solid #E4DEFF', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B80C8', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
                         ← Back
                     </button>
+                    {/* Call buttons — only for DM/mentor rooms */}
+                    {otherUserId && (
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                                title="Voice call"
+                                onClick={() => startCall({ toUserId: otherUserId, toUserName: chatName || 'User', callType: 'audio' })}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '2px 6px' }}
+                            >📞</button>
+                            <button
+                                title="Video call"
+                                onClick={() => startCall({ toUserId: otherUserId, toUserName: chatName || 'User', callType: 'video' })}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: '2px 6px' }}
+                            >📹</button>
+                        </div>
+                    )}
                 </div>
             )}
 

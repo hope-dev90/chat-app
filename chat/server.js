@@ -17,6 +17,7 @@ import emojiRoutes from "./routes/emojiRoute.js";
 import uploadRoutes from "./routes/uploadRoute.js";
 import circleRoutes from "./routes/circleRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
+import callRoutes from "./routes/callRoutes.js";
 
 // ─── App setup ─────────────────────────────────────────────────
 const app = express();
@@ -44,6 +45,7 @@ app.use("/emoji", emojiRoutes);
 app.use("/upload", uploadRoutes);
 app.use("/circles", circleRoutes);
 app.use("/posts", postRoutes);
+app.use("/calls", callRoutes);
 
 // ─── Health check ──────────────────────────────────────────────
 app.get("/", (req, res) => {

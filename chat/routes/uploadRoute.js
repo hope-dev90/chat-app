@@ -1,10 +1,11 @@
 import express from 'express';
 import {
     uploadImageFile,
-    uploadRegularFile
+    uploadRegularFile,
+    uploadAudioFile
 } from '../controllers/uploadController.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
-import { uploadImage, uploadFile } from '../config/cloudinary.js';
+import { uploadImage, uploadFile, uploadAudio } from '../config/cloudinary.js';
 
 const router = express.Router();
 
@@ -34,5 +35,8 @@ router.post('/image', authMiddleware, uploadSingle(uploadImage, 'image'), upload
 
 // Upload file (pdf, zip, doc etc)
 router.post('/file', authMiddleware, uploadSingle(uploadFile, 'file'), uploadRegularFile);
+
+// Upload audio (voice notes)
+router.post('/audio', authMiddleware, uploadSingle(uploadAudio, 'audio'), uploadAudioFile);
 
 export default router;

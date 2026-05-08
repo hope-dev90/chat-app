@@ -9,6 +9,8 @@ export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [connected, setConnected] = useState(false);
+    // Global incoming call state — any component can read this
+    const [incomingCall, setIncomingCall] = useState(null);
 
     useEffect(() => {
         if (!token) return;
@@ -45,8 +47,14 @@ export const SocketProvider = ({ children }) => {
             setOnlineUsers(prev => prev.filter(id => id !== userId));
         });
 
-        // Set socket immediately so ChatBox can register listeners
-        // ChatBox checks socket.connected before emitting
+        // Global call-invite listener
+        newSocket.on('call-invite', ({ from, fromId, roomUrl, callType }) => {
+            setIncomingCall({ from, fromId, roomUrl, callType });
+        });
+
+        newSocket.on('call-declined', () => setIncomingCall(null));
+        newSocket.on('call-ended',    () => setIncomingCall(null));
+
         setSocket(newSocket);
 
         return () => {
@@ -57,7 +65,7 @@ export const SocketProvider = ({ children }) => {
     }, [token]);
 
     return (
-        <SocketContext.Provider value={{ socket, onlineUsers, connected }}>
+        <SocketContext.Provider value={{ socket, onlineUsers, connected, incomingCall, setIncomingCall }}>
             {children}
         </SocketContext.Provider>
     );

@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import api from '../../api/axios';
 import { invalidateEmojiCache } from './EmojiText';
+import useVoiceRecorder from '../../hooks/useVoiceRecorder';
+import VoiceNotePlayer from './VoiceNotePlayer';
 
 // ── Design tokens ──────────────────────────────────────────────
 const C = {
@@ -294,6 +296,37 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
 
     const canSend = (message.trim() || selectedImage) && !uploading;
 
+    // ── Voice recorder ─────────────────────────────────────────
+    const [voicePreview, setVoicePreview] = useState(null); // { blob, url }
+
+    const handleRecorded = (blob) => {
+        setVoicePreview({ blob, url: URL.createObjectURL(blob) });
+    };
+
+    const { recording, duration, formatDuration, startRecording, stopRecording } =
+        useVoiceRecorder({ onRecorded: handleRecorded });
+
+    const sendVoiceNote = async () => {
+        if (!voicePreview) return;
+        setUploading(true);
+        setUploadProgress('Uploading voice note…');
+        try {
+            const formData = new FormData();
+            formData.append('audio', voicePreview.blob, 'voice-note.webm');
+            const res = await api.post('/upload/audio', formData);
+            const { url, name, size } = res.data.file;
+            onSend({ message: '', fileUrl: url, fileName: name, fileSize: size, fileType: 'audio' });
+            setVoicePreview(null);
+        } catch (err) {
+            setUploadError('Voice note upload failed');
+        } finally {
+            setUploading(false);
+            setUploadProgress('');
+        }
+    };
+
+    const discardVoice = () => setVoicePreview(null);
+
     // ── Render ─────────────────────────────────────────────────
     return (
         <div style={S.root}>
@@ -404,6 +437,19 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                 </div>
             )}
 
+            {/* Voice note preview — shows after recording */}
+            {voicePreview && (
+                <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10, background: C.purpleFaint, borderRadius: 12, padding: '8px 12px', border: `0.5px solid ${C.border}` }}>
+                    <VoiceNotePlayer src={voicePreview.url} isOwn />
+                    <button onClick={sendVoiceNote} disabled={uploading} style={{ padding: '6px 14px', borderRadius: 8, background: C.purple, color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                        {uploading ? 'Sending…' : 'Send'}
+                    </button>
+                    <button onClick={discardVoice} style={{ padding: '6px 10px', borderRadius: 8, background: C.purpleTint, color: C.textMuted, border: 'none', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                        ✕
+                    </button>
+                </div>
+            )}
+
             {/* Main input bar */}
             <div style={S.inputBar}>
 
@@ -449,13 +495,33 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
                     }}
                 />
 
-                {/* Send button */}
-                <button onClick={handleSend} disabled={!canSend} style={S.sendBtn(canSend)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14">
-                        <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-                    </svg>
-                </button>
-            </div>
+                {/* Send text/image OR mic button */}
+                {message.trim() || selectedImage ? (
+                    <button onClick={handleSend} disabled={!canSend} style={S.sendBtn(canSend)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14">
+                            <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                        </svg>
+                    </button>
+                ) : (
+                    /* Hold-to-record mic button */
+                    <button
+                        title="Hold to record voice note"
+                        onMouseDown={startRecording}
+                        onMouseUp={stopRecording}
+                        onTouchStart={startRecording}
+                        onTouchEnd={stopRecording}
+                        style={{
+                            ...S.sendBtn(true),
+                            background: recording ? C.red : C.purple,
+                            userSelect: 'none',
+                        }}
+                    >
+                        {recording
+                            ? <span style={{ fontSize: 10, color: '#fff', fontWeight: 700 }}>{formatDuration(duration)}</span>
+                            : <svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2H3v2a9 9 0 0 0 8 8.94V23h2v-2.06A9 9 0 0 0 21 12v-2h-2z"/></svg>
+                        }
+                    </button>
+                )}            </div>
 
             {/* Hidden file inputs */}
             <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
