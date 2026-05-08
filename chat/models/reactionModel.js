@@ -26,45 +26,22 @@ export const removeReaction = async ({ messageId, userId, standardEmoji, customE
     return result.rows[0];
 };
 
-// Get all reactions for a message
-export const getReactionsByMessage = async (messageId) => {
-    const result = await pool.query(
-        `SELECT
-            r.id,
-            r.emoji_type,
-            r.standard_emoji,
-            r.created_at,
-            u.id as user_id,
-            u.name as user_name,
-            ce.id as custom_emoji_id,
-            ce.name as custom_emoji_name,
-            ce.image_url as custom_emoji_url
-         FROM reactions r
-         JOIN users u ON r.user_id = u.id
-         LEFT JOIN custom_emojis ce ON r.custom_emoji_id = ce.id
-         WHERE r.message_id = $1
-         ORDER BY r.created_at ASC`,
-        [messageId]
-    );
-    return result.rows;
-};
-
-// Get reactions grouped by emoji for a message
+// Get reactions grouped by emoji for a message — count cast to int so JS gets a number not a string
 export const getGroupedReactions = async (messageId) => {
     const result = await pool.query(
         `SELECT
             r.emoji_type,
             r.standard_emoji,
-            ce.id as custom_emoji_id,
-            ce.name as custom_emoji_name,
-            ce.image_url as custom_emoji_url,
-            COUNT(*) as count,
-            JSON_AGG(u.name) as users
+            ce.id   AS custom_emoji_id,
+            ce.name AS custom_emoji_name,
+            ce.image_url AS custom_emoji_url,
+            COUNT(*)::int AS count,
+            JSON_AGG(u.name) AS users
          FROM reactions r
          JOIN users u ON r.user_id = u.id
          LEFT JOIN custom_emojis ce ON r.custom_emoji_id = ce.id
          WHERE r.message_id = $1
-         GROUP BY 
+         GROUP BY
             r.emoji_type,
             r.standard_emoji,
             ce.id,

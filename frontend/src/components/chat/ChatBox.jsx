@@ -29,6 +29,7 @@ export default function ChatBox({
     const getRoom = () => {
         if (roomType === 'general') return 'general';
         if (roomType === 'girls') return 'girls';
+        if (roomType === 'circle') return `circle_${otherUserId}`;
         if (roomType === 'mentor' || roomType === 'dm') {
             if (!otherUserId) return null;
             const sorted = [user.id, otherUserId].sort();
@@ -67,6 +68,7 @@ export default function ChatBox({
         };
 
         const onReactionUpdated = ({ messageId, reactions }) => {
+            console.log('reactionUpdated received:', messageId, reactions);
             setMessages(prev => prev.map(m =>
                 m.id === messageId ? { ...m, reactions } : m
             ));
@@ -166,12 +168,13 @@ export default function ChatBox({
     };
 
     const handleReaction = (messageId, emojiType, standardEmoji, customEmojiId) => {
-        if (!socket) return;
+        if (!socket || !room) return;
+        console.log('emitting addReaction:', { messageId, room, emojiType, standardEmoji });
         socket.emit('addReaction', { messageId, room, emojiType, standardEmoji, customEmojiId });
     };
 
     const handleRemoveReaction = (messageId, standardEmoji, customEmojiId) => {
-        if (!socket) return;
+        if (!socket || !room) return;
         socket.emit('removeReaction', { messageId, room, standardEmoji, customEmojiId });
     };
 

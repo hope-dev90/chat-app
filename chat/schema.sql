@@ -130,7 +130,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS reactions_unique_custom_idx
     ON reactions (message_id, user_id, custom_emoji_id)
     WHERE custom_emoji_id IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS reactions_message_id_idx
+CREATE INDEX IF NOT EXISTS reactions_message_id_idx
     ON reactions (message_id);
 
 -- Circles

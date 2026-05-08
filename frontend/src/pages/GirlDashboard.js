@@ -154,65 +154,167 @@ function ConversationList({ rooms, mentors, myMentor, onlineUsers, selected, onS
   );
 }
 
-// ── Dashboard home tab ─────────────────────────────────────────
-function DashboardHome({ user, mentors, myMentor, onlineUsers, onChatMentor, onRequest, requests }) {
-  return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "28px 32px", background: C.gray50 }}>
-      <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: C.gray900 }}>Welcome back, {user?.name?.split(" ")[0]} 👋</h2>
-      <p style={{ margin: "0 0 28px", fontSize: 14, color: C.gray500 }}>Here's what's happening in your community today.</p>
+// ── Community Hub Dashboard (replaces DashboardHome) ──────────
+const SyncBadge = ({ status }) => {
+  const map = {
+    offline: { label: "REACH OFFLINE", bg: "#FEF3C7", color: "#92400E" },
+    pending: { label: "SYNC PENDING",  bg: "#DBEAFE", color: "#1E40AF" },
+    synced:  { label: "SYNCED",        bg: "#D1FAE5", color: "#065F46" },
+  };
+  const s = map[status] || map.synced;
+  return <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", background: s.bg, color: s.color, padding: "2px 8px", borderRadius: 20 }}>{s.label}</span>;
+};
 
-      {/* Stats row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 28 }}>
-        {[
-          { label: "Available Mentors", value: mentors.length, color: C.blue, bg: C.blueLight },
-          { label: "My Mentor", value: myMentor ? myMentor.mentor_name?.split(" ")[0] : "None yet", color: C.teal, bg: "#F0FDFA" },
-          { label: "Online Now", value: onlineUsers.length, color: C.green, bg: C.greenLight },
-        ].map(s => (
-          <div key={s.label} style={{ background: C.white, borderRadius: 12, padding: "18px 20px", border: `1px solid ${C.gray200}` }}>
-            <div style={{ fontSize: 24, fontWeight: 800, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 13, color: C.gray500, marginTop: 4 }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
+const STATIC_POSTS = [
+  { id: 1, author: "Grace Mukamena", initials: "GM", avatarColor: "#F59E0B", timestamp: "2 hours ago", hashtag: "#Scholarships", syncStatus: "offline", title: "New STEM Scholarship cycle for 2024 is now open!", body: "I just received confirmation that the ministerial tech grants are accepting applications. Make sure to download the offline PDF packet...", likes: 124, comments: 42 },
+  { id: 2, author: "Aline Gasana",   initials: "AG", avatarColor: "#10B981", timestamp: "5 hours ago", hashtag: "#TechLife",      syncStatus: "pending", title: "Best practices for using IoT in local irrigation?",    body: "Has anyone successfully deployed solar-powered sensors in the Northern Province? Looking for advice on hardware that handles high...",  likes: 89,  comments: 18 },
+  { id: 3, author: "Divine Keza",    initials: "DK", avatarColor: "#6366F1", timestamp: "Yesterday",   hashtag: "#AgriTech",     syncStatus: "synced",  title: "Documenting our progress in Musanze!",                 body: "Our latest harvest was 20% more efficient thanks to the water tracking module we discussed last month. Here's a photo from this morning's...", likes: 256, comments: 56, hasImage: true },
+];
 
-      {/* My mentor card */}
-      {myMentor && (
-        <div style={{ background: C.white, borderRadius: 12, padding: "20px 24px", border: `1px solid ${C.gray200}`, marginBottom: 24, display: "flex", alignItems: "center", gap: 16 }}>
-          <Avatar initials={myMentor.mentor_name?.[0]} size={56} bg={C.blueLight} color={C.blue} online={onlineUsers.includes(myMentor.mentor_id)} />
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <span style={{ fontWeight: 700, fontSize: 16, color: C.gray900 }}>{myMentor.mentor_name}</span>
-              <span style={{ fontSize: 11, background: C.greenLight, color: C.green, padding: "2px 8px", borderRadius: 20, fontWeight: 600 }}>ACTIVE</span>
-            </div>
-            <p style={{ margin: 0, fontSize: 13, color: C.gray500 }}>Your current mentor</p>
-          </div>
-          <button onClick={onChatMentor} style={{ padding: "10px 20px", background: C.blue, color: C.white, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-            💬 Chat
-          </button>
+const TRENDING = [
+  { tag: "#TechGrants2024",  category: "Trending in Scholarships & Funding", metric: "468 discussions today" },
+  { tag: "#STEMLife",        category: "Trending in Career Growth",           metric: "1.2k active participants" },
+  { tag: "#OfflineFirst",    category: "Trending in Development",             metric: "320 new resources saved" },
+  { tag: "#GirlsWhoCodeRW", category: "Community Spotlight",                 metric: "Featured circle active now" },
+];
+
+function DashboardHome({ user, mentors, myMentor, onlineUsers, onChatMentor, onRequest, requests, onGoCircles }) {
+  const [circles, setCircles] = useState([]);
+  const [activeCircle, setActiveCircle] = useState(null);
+
+  useEffect(() => {
+    api.get('/circles').then(r => setCircles(r.data.circles || [])).catch(() => {});
+  }, []);
+
+  const handleJoin = async (circle) => {
+    try { await api.post(`/circles/${circle.id}/join`); setCircles(prev => prev.map(c => c.id === circle.id ? { ...c, is_member: true, member_count: Number(c.member_count) + 1 } : c)); }
+    catch (e) { console.error(e); }
+  };
+
+  if (activeCircle) {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ padding: '12px 20px', borderBottom: `1px solid ${C.gray200}`, background: C.white, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <button onClick={() => setActiveCircle(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.gray500, fontSize: 13, fontFamily: 'inherit' }}>← Back</button>
+          <div style={{ width: 24, height: 24, borderRadius: 6, background: activeCircle.color || C.blue }} />
+          <span style={{ fontWeight: 600, color: C.gray900 }}>{activeCircle.name}</span>
         </div>
-      )}
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <ChatBox roomType="circle" otherUserId={activeCircle.id} key={`circle-${activeCircle.id}`} chatName={activeCircle.name} />
+        </div>
+      </div>
+    );
+  }
 
-      {/* Mentor discovery */}
-      <h3 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 700, color: C.gray900 }}>Discover Mentors</h3>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
-        {mentors.map((m, i) => (
-          <div key={m.id} style={{ background: C.white, borderRadius: 12, padding: "16px", border: `1px solid ${C.gray200}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-              <Avatar initials={m.name[0]} size={40} bg={[C.blueLight, "#FCE7F3", "#D1FAE5"][i % 3]} color={[C.blue, "#BE185D", "#065F46"][i % 3]} online={onlineUsers.includes(m.id)} />
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 13, color: C.gray900 }}>{m.name}</div>
-                <div style={{ fontSize: 11, color: C.gray400 }}>{onlineUsers.includes(m.id) ? "🟢 Online" : "⚫ Offline"}</div>
-              </div>
+  return (
+    <div style={{ flex: 1, display: "flex", overflow: "hidden", background: "#F8FAFC" }}>
+      {/* ── Center feed ─────────────────────────────────── */}
+      <main style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
+        {/* Search bar */}
+        <div style={{ background: C.white, border: `1px solid ${C.gray200}`, borderRadius: 8, padding: "9px 14px", display: "flex", alignItems: "center", gap: 8, marginBottom: 20, color: C.gray400, fontSize: 13 }}>
+          🔍 <span>Search discussions, circles, or mentors...</span>
+        </div>
+
+        {/* Featured Circles */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: C.gray900 }}>Featured Circles</div>
+              <div style={{ fontSize: 11, color: C.gray400 }}>Join spaces that align with your journey</div>
             </div>
-            <button
-              onClick={() => !requests.has(m.id) && onRequest(m.id)}
-              disabled={requests.has(m.id)}
-              style={{ width: "100%", padding: "8px", borderRadius: 8, border: `1.5px solid ${requests.has(m.id) ? C.gray200 : "#EF4444"}`, background: C.white, color: requests.has(m.id) ? C.gray400 : "#EF4444", fontSize: 12, fontWeight: 600, cursor: requests.has(m.id) ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
-              {requests.has(m.id) ? "✓ Request Sent" : "Request Mentorship"}
-            </button>
+            <button onClick={onGoCircles} style={{ background: "none", border: "none", color: C.blue, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>View all →</button>
+          </div>
+          <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+            {circles.slice(0, 2).map(c => (
+              <div key={c.id} style={{ background: c.color || C.blue, borderRadius: 12, padding: "18px 16px", flex: 1, minWidth: 0, color: "#fff" }}>
+                <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 6 }}>{c.name}</div>
+                <div style={{ fontSize: 11, opacity: 0.88, lineHeight: 1.5, marginBottom: 16 }}>{c.description || 'No description'}</div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, opacity: 0.9 }}>{c.member_count} Members</span>
+                  {c.is_member
+                    ? <button onClick={() => setActiveCircle(c)} style={{ background: "rgba(255,255,255,0.9)", color: c.color || C.blue, border: "none", borderRadius: 20, padding: "5px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Open</button>
+                    : <button onClick={() => handleJoin(c)} style={{ background: "#fff", color: c.color || C.blue, border: "none", borderRadius: 20, padding: "5px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Join</button>
+                  }
+                </div>
+              </div>
+            ))}
+            {circles.length === 0 && <p style={{ color: C.gray400, fontSize: 13 }}>No circles yet — check back soon!</p>}
+          </div>
+        </div>
+
+        {/* Recent Discussions */}
+        <div style={{ fontWeight: 700, fontSize: 15, color: C.gray900, marginBottom: 12 }}>Recent Discussions</div>
+        {STATIC_POSTS.map(post => (
+          <div key={post.id} style={{ background: C.white, borderRadius: 10, padding: "16px", border: `1px solid #F1F5F9`, marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: post.avatarColor, color: "#fff", fontWeight: 700, fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{post.initials}</div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.gray900 }}>{post.author}</div>
+                  <div style={{ fontSize: 10, color: C.gray400 }}>{post.timestamp} · <span style={{ color: C.blue }}>{post.hashtag}</span></div>
+                </div>
+              </div>
+              <SyncBadge status={post.syncStatus} />
+            </div>
+            {post.hasImage && (
+              <div style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%)", borderRadius: 8, padding: "16px", marginBottom: 10, color: "#fff", fontSize: 18, fontWeight: 800 }}>
+                Your future,<br />offline-first.
+              </div>
+            )}
+            <div style={{ fontWeight: 700, fontSize: 13, color: C.gray900, marginBottom: 5 }}>{post.title}</div>
+            <div style={{ fontSize: 12, color: C.gray500, lineHeight: 1.5, marginBottom: 12 }}>{post.body}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <span style={{ fontSize: 12, color: C.gray500 }}>👍 {post.likes}</span>
+              <span style={{ fontSize: 12, color: C.gray500 }}>💬 {post.comments}</span>
+              <span style={{ fontSize: 12, color: C.blue, cursor: "pointer" }}>↗ Share</span>
+            </div>
           </div>
         ))}
-      </div>
+      </main>
+
+      {/* ── Right sidebar ────────────────────────────────── */}
+      <aside style={{ width: 240, flexShrink: 0, padding: "16px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", borderLeft: `1px solid ${C.gray200}` }}>
+        {/* Community Buzz */}
+        <div style={{ background: C.white, borderRadius: 10, padding: 14, border: `1px solid #F1F5F9` }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: C.gray900, marginBottom: 12 }}>Community Buzz</div>
+          {TRENDING.map((t, i) => (
+            <div key={i} style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.blue }}>{t.tag}</div>
+              <div style={{ fontSize: 10, color: C.gray500 }}>{t.category}</div>
+              <div style={{ fontSize: 10, color: C.gray400 }}>{t.metric}</div>
+            </div>
+          ))}
+          <button style={{ width: "100%", marginTop: 4, padding: "7px 0", borderRadius: 8, border: `1px solid ${C.gray200}`, background: C.white, color: C.gray700, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Explore All Trending</button>
+        </div>
+
+        {/* Offline Preparedness */}
+        <div style={{ background: "#1E293B", borderRadius: 10, padding: 14, color: "#fff" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8", marginBottom: 8 }}>OFFLINE PREPAREDNESS</div>
+          <div style={{ fontSize: 28, fontWeight: 800 }}>84% <span style={{ fontSize: 12, fontWeight: 400, color: C.green }}>Synced</span></div>
+          <div style={{ height: 6, background: "#334155", borderRadius: 3, margin: "8px 0 10px" }}>
+            <div style={{ width: "84%", height: "100%", background: C.green, borderRadius: 3 }} />
+          </div>
+          <div style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.6, marginBottom: 10 }}>Most of your recent community threads and circles are available to read even without internet access.</div>
+          <button style={{ width: "100%", padding: "7px 0", borderRadius: 8, background: C.blue, color: "#fff", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Manage Offline Data</button>
+        </div>
+
+        {/* Top Mentors */}
+        <div style={{ background: C.white, borderRadius: 10, padding: 14, border: `1px solid #F1F5F9` }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: C.gray900, marginBottom: 12 }}>Top Mentors</div>
+          {mentors.slice(0, 3).map((m, i) => (
+            <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", background: [C.blueLight, "#FCE7F3", "#D1FAE5"][i % 3], color: [C.blue, "#BE185D", "#065F46"][i % 3], fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{m.name[0]}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.gray900 }}>{m.name}</div>
+                <div style={{ fontSize: 10, color: C.gray400 }}>{onlineUsers.includes(m.id) ? "🟢 Online" : "Data Scientist"}</div>
+              </div>
+              <button onClick={() => !requests.has(m.id) && onRequest(m.id)} style={{ padding: "4px 12px", borderRadius: 20, background: C.blueLight, color: C.blue, border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                {requests.has(m.id) ? "Sent" : "Connect"}
+              </button>
+            </div>
+          ))}
+        </div>
+      </aside>
     </div>
   );
 }
@@ -295,6 +397,140 @@ function CirclesTab({ user }) {
                 </button>
               )}
             </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Mentorship tab — full chat with mentor ─────────────────────
+function MentorshipTab({ user, mentors, myMentor, onlineUsers, onRequest, requests }) {
+  const [view, setView] = useState('discover'); // 'discover' | 'chat'
+
+  // If they have a mentor, default to chat view
+  useEffect(() => {
+    if (myMentor) setView('chat');
+  }, [myMentor]);
+
+  if (view === 'chat' && myMentor) {
+    return (
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        {/* Left: mentor profile card */}
+        <div style={{ width: 280, flexShrink: 0, borderRight: `1px solid ${C.gray200}`, background: C.white, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Header */}
+          <div style={{ padding: '20px 20px 16px', borderBottom: `1px solid ${C.gray100}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              <div style={{ position: 'relative' }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: C.blueLight, color: C.blue, fontWeight: 700, fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {myMentor.mentor_name?.[0]}
+                </div>
+                {onlineUsers.includes(myMentor.mentor_id) && (
+                  <span style={{ position: 'absolute', bottom: 2, right: 2, width: 12, height: 12, borderRadius: '50%', background: C.green, border: '2px solid white' }} />
+                )}
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: C.gray900 }}>{myMentor.mentor_name}</div>
+                <div style={{ fontSize: 12, color: onlineUsers.includes(myMentor.mentor_id) ? C.green : C.gray400, fontWeight: 500 }}>
+                  {onlineUsers.includes(myMentor.mentor_id) ? '● Active now' : '○ Offline'}
+                </div>
+              </div>
+            </div>
+            <div style={{ background: C.blueLight, borderRadius: 8, padding: '10px 12px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.blue, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Your Mentor</div>
+              <div style={{ fontSize: 12, color: C.gray700 }}>{myMentor.mentor_email}</div>
+            </div>
+          </div>
+
+          {/* Switch to discover */}
+          <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.gray100}` }}>
+            <button onClick={() => setView('discover')} style={{ width: '100%', padding: '8px', borderRadius: 8, border: `1px solid ${C.gray200}`, background: C.white, color: C.gray700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+              🔍 Discover Other Mentors
+            </button>
+          </div>
+
+          {/* Chat info */}
+          <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>About This Chat</div>
+            <div style={{ fontSize: 12, color: C.gray500, lineHeight: 1.7 }}>
+              This is your private mentorship channel. All messages, files, and resources shared here are only visible to you and your mentor.
+            </div>
+            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                { icon: '💬', label: 'Send messages & files' },
+                { icon: '📎', label: 'Share documents' },
+                { icon: '🖼️', label: 'Share images' },
+                { icon: '😊', label: 'React with emojis' },
+              ].map(f => (
+                <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: C.gray600 }}>
+                  <span>{f.icon}</span><span>{f.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: full chat */}
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <ChatBox
+            roomType="mentor"
+            otherUserId={myMentor.mentor_id}
+            key={`mentor-${myMentor.mentor_id}`}
+            chatName={myMentor.mentor_name}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Discover view
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', background: C.gray50 }}>
+      {myMentor && (
+        <div style={{ background: C.white, borderRadius: 12, padding: '16px 20px', border: `1px solid ${C.gray200}`, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 48, height: 48, borderRadius: '50%', background: C.blueLight, color: C.blue, fontWeight: 700, fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {myMentor.mentor_name?.[0]}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontWeight: 700, fontSize: 15, color: C.gray900 }}>{myMentor.mentor_name}</span>
+              <span style={{ fontSize: 11, background: C.greenLight, color: C.green, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>ACTIVE</span>
+            </div>
+            <div style={{ fontSize: 12, color: C.gray500 }}>Your current mentor</div>
+          </div>
+          <button onClick={() => setView('chat')} style={{ padding: '10px 20px', background: C.blue, color: C.white, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+            💬 Open Chat
+          </button>
+        </div>
+      )}
+
+      <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700, color: C.gray900 }}>Discover Mentors</h2>
+      <p style={{ margin: '0 0 20px', fontSize: 13, color: C.gray500 }}>Find the perfect guide for your professional journey.</p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+        {mentors.map((m, i) => (
+          <div key={m.id} style={{ background: C.white, borderRadius: 12, padding: '18px', border: `1px solid ${C.gray200}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ position: 'relative' }}>
+                <div style={{ width: 48, height: 48, borderRadius: '50%', background: [C.blueLight, '#FCE7F3', '#D1FAE5'][i % 3], color: [C.blue, '#BE185D', '#065F46'][i % 3], fontWeight: 700, fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {m.name[0]}
+                </div>
+                {onlineUsers.includes(m.id) && <span style={{ position: 'absolute', bottom: 1, right: 1, width: 10, height: 10, borderRadius: '50%', background: C.green, border: '2px solid white' }} />}
+              </div>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 14, color: C.gray900 }}>{m.name}</div>
+                <div style={{ fontSize: 11, color: onlineUsers.includes(m.id) ? C.green : C.gray400 }}>
+                  {onlineUsers.includes(m.id) ? '🟢 Online' : '⚫ Offline'}
+                </div>
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: C.gray500, marginBottom: 14 }}>{m.email}</div>
+            <button
+              onClick={() => !requests.has(m.id) && onRequest(m.id)}
+              disabled={requests.has(m.id)}
+              style={{ width: '100%', padding: '9px', borderRadius: 8, border: `1.5px solid ${requests.has(m.id) ? C.gray200 : '#EF4444'}`, background: C.white, color: requests.has(m.id) ? C.gray400 : '#EF4444', fontSize: 13, fontWeight: 600, cursor: requests.has(m.id) ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+              {requests.has(m.id) ? '✓ Request Sent' : 'Request Mentorship'}
+            </button>
           </div>
         ))}
       </div>
@@ -423,13 +659,16 @@ export default function GirlDashboard() {
         {/* Dashboard home */}
         {nav === "dashboard" && (
           <DashboardHome user={user} mentors={mentors} myMentor={myMentor} onlineUsers={onlineUsers}
-            onChatMentor={openMentorChat} onRequest={requestMentor} requests={requestedIds} />
+            onChatMentor={openMentorChat} onRequest={requestMentor} requests={requestedIds}
+            onGoCircles={() => setNav("circles")} />
         )}
 
-        {/* Mentors tab — same as dashboard but focused on mentor list */}
+        {/* Mentors tab */}
         {nav === "mentors" && (
-          <DashboardHome user={user} mentors={mentors} myMentor={myMentor} onlineUsers={onlineUsers}
-            onChatMentor={openMentorChat} onRequest={requestMentor} requests={requestedIds} />
+          <MentorshipTab
+            user={user} mentors={mentors} myMentor={myMentor}
+            onlineUsers={onlineUsers} onRequest={requestMentor} requests={requestedIds}
+          />
         )}
 
         {/* Settings */}

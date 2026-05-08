@@ -217,9 +217,24 @@ export default function ChatInput({ onSend, onTyping, roomType }) {
     };
 
     const insertEmoji = (emoji) => {
-        setMessage(prev => prev + emoji);
+        const textarea = textareaRef.current;
+        if (!textarea) {
+            setMessage(prev => prev + emoji);
+            setShowEmojiPicker(false);
+            return;
+        }
+        const start = textarea.selectionStart ?? message.length;
+        const end   = textarea.selectionEnd   ?? message.length;
+        const newValue = message.slice(0, start) + emoji + message.slice(end);
+        setMessage(newValue);
         setShowEmojiPicker(false);
-        textareaRef.current?.focus();
+        setShowCustomEmojis(false);
+        // Restore cursor right after the inserted emoji
+        requestAnimationFrame(() => {
+            textarea.focus();
+            const newPos = start + emoji.length;
+            textarea.setSelectionRange(newPos, newPos);
+        });
     };
 
     const handleImageSelect = (e) => {

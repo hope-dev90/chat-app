@@ -214,6 +214,8 @@ export default function chatSocket(io) {
             customEmojiId
         }) => {
             try {
+                console.log('addReaction received:', { messageId, room, emojiType, standardEmoji, customEmojiId, user: socket.user.name });
+
                 // Validate
                 if (emojiType === 'standard' && !standardEmoji) {
                     socket.emit('error', { message: 'Standard emoji is required' });
@@ -235,6 +237,7 @@ export default function chatSocket(io) {
 
                 // Get updated grouped reactions
                 const reactions = await getGroupedReactions(messageId);
+                console.log('reactions after add:', reactions);
 
                 // Tell everyone in room
                 io.to(room).emit('reactionUpdated', {

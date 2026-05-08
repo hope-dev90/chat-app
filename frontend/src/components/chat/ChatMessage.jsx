@@ -70,10 +70,10 @@ export default function ChatMessage({
 
   // Handle standard reaction
   const handleStandardReact = (emoji) => {
-    // Check if already reacted
     const existing = message.reactions?.find(
       (r) => r.standard_emoji === emoji && r.users?.includes(user.name),
     );
+    console.log('handleStandardReact:', emoji, 'existing:', existing, 'messageId:', message.id);
     if (existing) {
       onRemoveReaction(message.id, emoji, null);
     } else {
