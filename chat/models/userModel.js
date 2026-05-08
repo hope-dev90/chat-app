@@ -52,6 +52,18 @@ export const getAllMentors = async () => {
     return result.rows;
 };
 
+// Get all users (excluding the current user)
+export const getAllUsers = async (excludeUserId) => {
+    const result = await pool.query(
+        `SELECT id, name, email, online, last_seen, role
+         FROM users 
+         WHERE id != $1
+         ORDER BY name ASC`,
+        [excludeUserId]
+    );
+    return result.rows;
+};
+
 // Update online status
 export const updateOnlineStatus = async (id, online) => {
     await pool.query(

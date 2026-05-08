@@ -8,6 +8,10 @@ import ForgotPassword from './pages/ForgotPassword.jsx';
 import GirlDashboard from './pages/GirlDashboard';
 import MentorDashboard from './pages/MentorDashboard';
 import VerifyEmail from './pages/VerifyEmail';
+import CommunityHub from './pages/CommunityHub';
+import DirectMessages from './pages/DirectMessages';
+import Circles from './pages/Circles';
+import MentorChat from './pages/MentorChat';
 
 // Protected route component
 const ProtectedRoute = ({ children, role }) => {
@@ -36,11 +40,31 @@ const AppRoutes = () => {
                     <GirlDashboard />
                 </ProtectedRoute>
             } />
+            <Route path="/community" element={
+                <ProtectedRoute role="girl">
+                    <CommunityHub />
+                </ProtectedRoute>
+            } />
+            <Route path="/chat" element={
+                <ProtectedRoute role="girl">
+                    <DirectMessages />
+                </ProtectedRoute>
+            } />
+            <Route path="/circles" element={
+                <ProtectedRoute role="girl">
+                    <Circles />
+                </ProtectedRoute>
+            } />
 
             {/* Mentor routes */}
             <Route path="/mentor-dashboard" element={
                 <ProtectedRoute role="mentor">
                     <MentorDashboard />
+                </ProtectedRoute>
+            } />
+            <Route path="/mentorship/chat" element={
+                <ProtectedRoute role="mentor">
+                    <MentorChat />
                 </ProtectedRoute>
             } />
 
@@ -49,7 +73,7 @@ const AppRoutes = () => {
                 user?.role === 'mentor'
                     ? <Navigate to="/mentor-dashboard" />
                     : user?.role === 'girl'
-                        ? <Navigate to="/dashboard" />
+                        ? <Navigate to="/community" />
                         : <Navigate to="/login" />
             } />
 
