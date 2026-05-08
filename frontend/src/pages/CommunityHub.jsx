@@ -1,8 +1,123 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../api/axios';
 
 export default function CommunityHub() {
-  const [activeTab, setActiveTab] = useState('general');
-  const [offlineToggle, setOfflineToggle] = useState(true);
+  const navigate = useNavigate();
+  const [circles, setCircles] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newCircleName, setNewCircleName] = useState('');
+  const [newCircleDescription, setNewCircleDescription] = useState('');
+  const [newCircleColor, setNewCircleColor] = useState('#2563EB');
+
+  // Fetch data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [profileRes, circlesRes, postsRes, usersRes] = await Promise.all([
+          api.get('/auth/profile'),
+          api.get('/circles'),
+          api.get('/posts'),
+          api.get('/auth/users')
+        ]);
+        setCurrentUser(profileRes.data.user);
+        setCircles(circlesRes.data.circles || []);
+        setPosts(postsRes.data.posts || []);
+        setUsers(usersRes.data.users || []);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Navigate to different screens
+  const handleTabClick = (tab) => {
+    switch(tab) {
+      case 'dms':
+        navigate('/chat');
+        break;
+      case 'circles':
+        navigate('/circles');
+        break;
+      case 'mentors':
+        navigate('/mentorship/chat');
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Join circle
+  const handleJoinCircle = async (circleId) => {
+    try {
+      await api.post(`/circles/${circleId}/join`);
+      const circlesRes = await api.get('/circles');
+      setCircles(circlesRes.data.circles || []);
+    } catch (error) {
+      console.error('Failed to join circle:', error);
+    }
+  };
+
+  // Create circle
+  const handleCreateCircle = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post('/circles', {
+        name: newCircleName,
+        description: newCircleDescription,
+        color: newCircleColor
+      });
+      setShowCreateModal(false);
+      setNewCircleName('');
+      setNewCircleDescription('');
+      const circlesRes = await api.get('/circles');
+      setCircles(circlesRes.data.circles || []);
+    } catch (error) {
+      console.error('Failed to create circle:', error);
+    }
+  };
+
+  // Format status display
+  const getStatusInfo = (status) => {
+    switch(status) {
+      case 'synced':
+        return { label: 'SYNCED', color: 'bg-accentGreen/10 text-accentGreen' };
+      case 'sync_pending':
+        return { label: 'SYNC PENDING', color: 'bg-accentOrange/10 text-accentOrange' };
+      case 'reach_offline':
+        return { label: 'REACH OFFLINE', color: 'bg-gray-200 text-gray-600' };
+      default:
+        return { label: 'SYNCED', color: 'bg-accentGreen/10 text-accentGreen' };
+    }
+  };
+
+  // Format time
+  const formatTime = (dateStr) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return date.toLocaleDateString();
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-lightGrayBg">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-lightGrayBg">
@@ -20,11 +135,11 @@ export default function CommunityHub() {
 
         <div className="flex items-center gap-3 mb-8 p-3 bg-white/5 rounded-lg">
           <div className="w-10 h-10 rounded-full bg-primaryBlue flex items-center justify-center font-bold">
-            MU
+            {currentUser?.name?.split(' ')[0][0]}{currentUser?.name?.split(' ')[1]?.[0] || ''}
           </div>
           <div>
-            <p className="text-sm font-semibold">Marie Uwase</p>
-            <p className="text-xs text-gray-400">Agri-Tech Lead</p>
+            <p className="text-sm font-semibold">{currentUser?.name}</p>
+            <p className="text-xs text-gray-400">Member</p>
           </div>
         </div>
 
@@ -72,17 +187,21 @@ export default function CommunityHub() {
               {['General', 'Circles', 'Mentors', 'Dms'].map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab.toLowerCase())}
-                  className={`px-4 py-1.5 rounded-pill text-xs font-semibold transition ${
-                    activeTab === tab.toLowerCase()
-                      ? 'bg-primaryBlue text-white'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  onClick={() => handleTabClick(tab.toLowerCase())}
+                  className="px-4 py-1.5 rounded-pill text-xs font-semibold transition text-gray-600 hover:text-gray-900 hover:bg-gray-200"
                 >
                   {tab}
                 </button>
               ))}
             </div>
+            {currentUser?.role === 'mentor' && (
+              <button 
+                onClick={() => setShowCreateModal(true)}
+                className="bg-primaryBlue text-white text-sm font-semibold px-4 py-1.5 rounded-pill"
+              >
+                + Create Circle
+              </button>
+            )}
             <button className="text-gray-500 hover:text-gray-700">🔍</button>
             <button className="text-gray-500 hover:text-gray-700">🔔</button>
           </div>
@@ -107,22 +226,31 @@ export default function CommunityHub() {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-coral rounded-card p-6 text-white shadow-subtle">
-                <div className="text-3xl mb-2">🌾</div>
-                <h4 className="text-lg font-bold mb-1">Women in Agri-Tech</h4>
-                <p className="text-white/90 text-sm mb-4">1.2k Members</p>
-                <button className="bg-primaryBlue hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-pill">
-                  Join
-                </button>
-              </div>
-              <div className="bg-primaryBlue rounded-card p-6 text-white shadow-subtle">
-                <div className="text-3xl mb-2">💻</div>
-                <h4 className="text-lg font-bold mb-1">Coding Basics</h4>
-                <p className="text-white/90 text-sm mb-4">860 Members</p>
-                <button className="bg-white hover:bg-gray-100 text-primaryBlue text-sm font-semibold px-4 py-2 rounded-pill">
-                  Join
-                </button>
-              </div>
+              {circles.map((circle) => (
+                <div 
+                  key={circle.id} 
+                  className="rounded-card p-6 text-white shadow-subtle"
+                  style={{ backgroundColor: circle.color || '#2563EB' }}
+                >
+                  <div className="text-3xl mb-2">
+                    {circle.color === '#EF6C6C' ? '🌾' : '💻'}
+                  </div>
+                  <h4 className="text-lg font-bold mb-1">{circle.name}</h4>
+                  <p className="text-white/90 text-sm mb-4">
+                    {circle.member_count || 0} Members
+                  </p>
+                  <button 
+                    onClick={() => handleJoinCircle(circle.id)}
+                    className={`text-sm font-semibold px-4 py-2 rounded-pill ${
+                      circle.color === '#EF6C6C' 
+                        ? 'bg-primaryBlue hover:bg-blue-700 text-white' 
+                        : 'bg-white hover:bg-gray-100 text-primaryBlue'
+                    }`}
+                  >
+                    Join
+                  </button>
+                </div>
+              ))}
             </div>
           </section>
 
@@ -130,87 +258,55 @@ export default function CommunityHub() {
           <section>
             <h3 className="text-base font-bold text-gray-900 mb-4">Recent Discussions</h3>
             <div className="space-y-4">
-              {[
-                {
-                  user: 'Grace Mukamena',
-                  time: '2h ago',
-                  hashtag: '#Scholarships',
-                  status: 'SYNCED',
-                  statusColor: 'bg-accentGreen/10 text-accentGreen',
-                  title: 'New STEM Scholarship cycle for 2024 is now open!',
-                  body: 'Applications are now open for girls in Rwanda pursuing STEM degrees.',
-                  likes: 124,
-                  comments: 42,
-                  hasImage: false
-                },
-                {
-                  user: 'Aline Gasana',
-                  time: '4h ago',
-                  hashtag: '#IoT',
-                  status: 'SYNC PENDING',
-                  statusColor: 'bg-accentOrange/10 text-accentOrange',
-                  title: 'Best practices for using IoT in local irrigation?',
-                  body: 'I\'m working on a project with smallholder farmers in Musanze.',
-                  likes: 89,
-                  comments: 18,
-                  hasImage: false
-                },
-                {
-                  user: 'Divine Keza',
-                  time: '6h ago',
-                  hashtag: '#Community',
-                  status: 'REACH OFFLINE',
-                  statusColor: 'bg-gray-200 text-gray-600',
-                  title: 'Documenting our progress in Musanze!',
-                  body: 'We had an amazing workshop last week!',
-                  likes: 256,
-                  comments: 56,
-                  hasImage: true
-                }
-              ].map((post, idx) => (
-                <div key={idx} className="bg-whiteCard shadow-subtle rounded-card p-5 border border-gray-100 hover:shadow-lg transition">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700">
-                        {post.user.split(' ')[0][0]}{post.user.split(' ')[1][0]}
+              {posts.map((post) => {
+                const statusInfo = getStatusInfo(post.status);
+                return (
+                  <div key={post.id} className="bg-whiteCard shadow-subtle rounded-card p-5 border border-gray-100 hover:shadow-lg transition">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700">
+                          {post.user_name?.split(' ')[0][0]}{post.user_name?.split(' ')[1]?.[0] || ''}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{post.user_name}</p>
+                          <p className="text-xs text-gray-500">{formatTime(post.created_at)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">{post.user}</p>
-                        <p className="text-xs text-gray-500">{post.time}</p>
-                      </div>
+                      <span className={`px-2 py-0.5 rounded-pill text-xs font-semibold ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </span>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-pill text-xs font-semibold ${post.statusColor}`}>
-                      {post.status}
-                    </span>
-                  </div>
-                  <span className="inline-block bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-pill mb-2">
-                    {post.hashtag}
-                  </span>
-                  <h4 className="text-sm font-bold text-gray-900 mb-1">{post.title}</h4>
-                  <p className="text-sm text-gray-600 mb-3">{post.body}</p>
-                  {post.hasImage && (
-                    <div className="bg-gray-100 rounded-card h-40 mb-3 flex items-center justify-center">
-                      📷 Image attached
-                    </div>
-                  )}
-                  <div className="flex items-center gap-6 text-sm text-gray-500">
-                    <button className="flex items-center gap-1 hover:text-primaryBlue">
-                      ❤️ {post.likes}
-                    </button>
-                    <button className="flex items-center gap-1 hover:text-primaryBlue">
-                      💬 {post.comments}
-                    </button>
-                    <button className="ml-auto hover:text-primaryBlue">
-                      📤 Share
-                    </button>
-                    {post.hasImage && (
-                      <button className="text-primaryBlue text-xs font-semibold">
-                        Save Photo
-                      </button>
+                    {post.hashtags?.[0] && (
+                      <span className="inline-block bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-pill mb-2">
+                        #{post.hashtags[0]}
+                      </span>
                     )}
+                    <h4 className="text-sm font-bold text-gray-900 mb-1">{post.title}</h4>
+                    <p className="text-sm text-gray-600 mb-3">{post.content}</p>
+                    {post.image_url && (
+                      <div className="bg-gray-100 rounded-card h-40 mb-3 flex items-center justify-center">
+                        📷 Image attached
+                      </div>
+                    )}
+                    <div className="flex items-center gap-6 text-sm text-gray-500">
+                      <button className="flex items-center gap-1 hover:text-primaryBlue">
+                        ❤️ {post.like_count || 0}
+                      </button>
+                      <button className="flex items-center gap-1 hover:text-primaryBlue">
+                        💬 {post.comment_count || 0}
+                      </button>
+                      <button className="ml-auto hover:text-primaryBlue">
+                        📤 Share
+                      </button>
+                      {post.image_url && (
+                        <button className="text-primaryBlue text-xs font-semibold">
+                          Save Photo
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         </div>
@@ -262,17 +358,14 @@ export default function CommunityHub() {
         <section>
           <h3 className="text-sm font-bold text-gray-900 mb-4">Top Mentors</h3>
           <div className="space-y-3">
-            {[
-              { name: 'Alice Umutoni', title: 'Senior Engineer', initials: 'AU' },
-              { name: 'Diane Mukamena', title: 'Product Lead', initials: 'DM' }
-            ].map((mentor, idx) => (
-              <div key={idx} className="flex items-center gap-3">
+            {users.filter(u => u.role === 'mentor').slice(0, 2).map((mentor) => (
+              <div key={mentor.id} className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primaryBlue flex items-center justify-center text-white font-bold">
-                  {mentor.initials}
+                  {mentor.name?.split(' ')[0][0]}{mentor.name?.split(' ')[1]?.[0] || ''}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-900">{mentor.name}</p>
-                  <p className="text-xs text-gray-500">{mentor.title}</p>
+                  <p className="text-xs text-gray-500">{mentor.role}</p>
                 </div>
                 <button className="bg-primaryBlue text-white text-xs font-semibold px-3 py-1.5 rounded-pill">
                   Connect
@@ -282,6 +375,65 @@ export default function CommunityHub() {
           </div>
         </section>
       </aside>
+
+      {/* Create Circle Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-whiteCard rounded-card p-6 w-full max-w-md shadow-lg">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Create New Circle</h3>
+            <form onSubmit={handleCreateCircle}>
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Circle Name</label>
+                <input
+                  type="text"
+                  value={newCircleName}
+                  onChange={(e) => setNewCircleName(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primaryBlue/20"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={newCircleDescription}
+                  onChange={(e) => setNewCircleDescription(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primaryBlue/20"
+                  rows={3}
+                />
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Color</label>
+                <div className="flex gap-2">
+                  {['#EF6C6C', '#2563EB', '#10B981', '#F59E0B'].map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setNewCircleColor(color)}
+                      className={`w-8 h-8 rounded-full border-2 ${newCircleColor === color ? 'border-gray-800' : 'border-transparent'}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 border border-gray-200 text-gray-700 text-sm font-semibold py-2 rounded-pill hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-primaryBlue text-white text-sm font-semibold py-2 rounded-pill hover:bg-blue-700"
+                >
+                  Create Circle
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

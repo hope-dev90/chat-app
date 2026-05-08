@@ -130,5 +130,79 @@ CREATE UNIQUE INDEX IF NOT EXISTS reactions_unique_custom_idx
     ON reactions (message_id, user_id, custom_emoji_id)
     WHERE custom_emoji_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS reactions_message_id_idx
+CREATE UNIQUE INDEX IF NOT EXISTS reactions_message_id_idx
     ON reactions (message_id);
+
+-- Circles
+CREATE TABLE IF NOT EXISTS circles (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(120) NOT NULL,
+    description TEXT,
+    cover_image_url TEXT,
+    color VARCHAR(20),
+    created_by BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS circles_created_by_idx ON circles (created_by);
+
+-- Circle Members
+CREATE TABLE IF NOT EXISTS circle_members (
+    id BIGSERIAL PRIMARY KEY,
+    circle_id BIGINT NOT NULL REFERENCES circles(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (circle_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS circle_members_circle_id_idx ON circle_members (circle_id);
+CREATE INDEX IF NOT EXISTS circle_members_user_id_idx ON circle_members (user_id);
+
+-- Posts
+CREATE TABLE IF NOT EXISTS posts (
+    id BIGSERIAL PRIMARY KEY,
+    circle_id BIGINT REFERENCES circles(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    image_url TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'synced' CHECK (status IN ('synced', 'sync_pending', 'reach_offline')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS posts_circle_id_idx ON posts (circle_id);
+CREATE INDEX IF NOT EXISTS posts_user_id_idx ON posts (user_id);
+
+-- Post Hashtags
+CREATE TABLE IF NOT EXISTS post_hashtags (
+    id BIGSERIAL PRIMARY KEY,
+    post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    hashtag VARCHAR(80) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS post_hashtags_post_id_idx ON post_hashtags (post_id);
+CREATE INDEX IF NOT EXISTS post_hashtags_hashtag_idx ON post_hashtags (hashtag);
+
+-- Post Likes
+CREATE TABLE IF NOT EXISTS post_likes (
+    id BIGSERIAL PRIMARY KEY,
+    post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    liked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (post_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS post_likes_post_id_idx ON post_likes (post_id);
+CREATE INDEX IF NOT EXISTS post_likes_user_id_idx ON post_likes (user_id);
+
+-- Post Comments
+CREATE TABLE IF NOT EXISTS post_comments (
+    id BIGSERIAL PRIMARY KEY,
+    post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS post_comments_post_id_idx ON post_comments (post_id);
+CREATE INDEX IF NOT EXISTS post_comments_user_id_idx ON post_comments (user_id);
