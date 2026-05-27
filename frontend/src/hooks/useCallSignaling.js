@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import api from '../api/axios';
 
 /**
  * useCallSignaling
@@ -47,14 +48,7 @@ export default function useCallSignaling({ socket, currentUser }) {
         if (!socket) return;
         try {
             // Ask backend to create a Daily.co room
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/calls/create-room`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-            const data = await res.json();
+            const { data } = await api.post('/calls/create-room');
             if (!data.roomUrl) throw new Error('No room URL returned');
 
             // Signal the recipient
